@@ -1,7 +1,7 @@
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { useGameStore } from '../store/gameStore';
+import { useRef, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { useGameStore } from "../store/gameStore";
 
 const MAX_PARTICLES = 3000;
 
@@ -27,7 +27,7 @@ export function Rain() {
   }, []);
 
   useFrame((_, delta) => {
-    if (!pointsRef.current || gameState !== 'playing') return;
+    if (!pointsRef.current || gameState !== "playing") return;
 
     const newIntensity = Math.min(1, Math.max(0, (waterLevel + 2) / 15));
     if (Math.abs(newIntensity - lastIntensityRef.current) > 0.01) {
@@ -36,7 +36,8 @@ export function Rain() {
     }
 
     const activeCount = Math.floor(MAX_PARTICLES * stormIntensity);
-    const positions = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
+    const positions = pointsRef.current.geometry.attributes
+      .position as THREE.BufferAttribute;
 
     for (let i = 0; i < MAX_PARTICLES; i++) {
       if (i < activeCount) {
@@ -45,10 +46,12 @@ export function Rain() {
         if (positions.array[i * 3 + 1] < waterLevel) {
           positions.array[i * 3] = playerPos[0] + (Math.random() - 0.5) * 60;
           positions.array[i * 3 + 1] = playerPos[1] + Math.random() * 25 + 10;
-          positions.array[i * 3 + 2] = playerPos[2] + (Math.random() - 0.5) * 60;
+          positions.array[i * 3 + 2] =
+            playerPos[2] + (Math.random() - 0.5) * 60;
         }
 
-        positions.array[i * 3] += (Math.random() - 0.5) * delta * stormIntensity * 3;
+        positions.array[i * 3] +=
+          (Math.random() - 0.5) * delta * stormIntensity * 3;
       } else {
         positions.array[i * 3 + 1] = -100;
       }
@@ -62,9 +65,7 @@ export function Rain() {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={MAX_PARTICLES}
-          array={particleData.positions}
-          itemSize={3}
+          args={[particleData.positions, 3]}
         />
       </bufferGeometry>
       <pointsMaterial

@@ -1,5 +1,5 @@
-import { useEffect, useCallback } from 'react';
-import { useGameStore } from '../store/gameStore';
+import { useEffect, useCallback } from "react";
+import { useGameStore } from "../store/gameStore";
 
 export function InteractionSystem() {
   const gameState = useGameStore((s) => s.gameState);
@@ -14,9 +14,11 @@ export function InteractionSystem() {
   const updateHealth = useGameStore((s) => s.updateHealth);
 
   const checkVictory = useCallback(() => {
-    if (ark.sectionsBuilt >= ark.totalSections &&
-        ark.animalsBoarded >= ark.totalAnimals &&
-        world.waterLevel > 5) {
+    if (
+      ark.sectionsBuilt >= ark.totalSections &&
+      ark.animalsBoarded >= ark.totalAnimals &&
+      world.waterLevel > 5
+    ) {
       gameOver(true);
     }
   }, [ark, world.waterLevel, gameOver]);
@@ -28,16 +30,22 @@ export function InteractionSystem() {
     if (world.waterLevel > 12 && ark.sectionsBuilt < ark.totalSections * 0.5) {
       gameOver(false);
     }
-  }, [player.health, world.waterLevel, ark.sectionsBuilt, ark.totalSections, gameOver]);
+  }, [
+    player.health,
+    world.waterLevel,
+    ark.sectionsBuilt,
+    ark.totalSections,
+    gameOver,
+  ]);
 
   useEffect(() => {
-    if (gameState !== 'playing') return;
+    if (gameState !== "playing") return;
     checkVictory();
     checkDefeat();
   }, [gameState, checkVictory, checkDefeat]);
 
   useEffect(() => {
-    if (gameState !== 'playing') return;
+    if (gameState !== "playing") return;
 
     if (world.waterLevel > player.position[1] - 1) {
       const interval = setInterval(() => {
@@ -45,27 +53,28 @@ export function InteractionSystem() {
       }, 1000);
       return () => clearInterval(interval);
     }
+    return;
   }, [gameState, world.waterLevel, player.position, updateHealth]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (gameState === 'playing') pauseGame();
-        else if (gameState === 'paused') resumeGame();
+      if (e.key === "Escape") {
+        if (gameState === "playing") pauseGame();
+        else if (gameState === "paused") resumeGame();
       }
 
-      if (gameState !== 'playing') return;
+      if (gameState !== "playing") return;
 
-      if (e.key === 'b' || e.key === 'B') {
+      if (e.key === "b" || e.key === "B") {
         buildArkSection();
       }
-      if (e.key === 'p' || e.key === 'P') {
+      if (e.key === "p" || e.key === "P") {
         coatWithPitch();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [gameState, pauseGame, resumeGame, buildArkSection, coatWithPitch]);
 
   return null;
