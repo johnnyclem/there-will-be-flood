@@ -12,6 +12,7 @@ export function Rain() {
   const gameState = useGameStore((s) => s.gameState);
   const updateStormIntensity = useGameStore((s) => s.updateStormIntensity);
   const waterLevel = useGameStore((s) => s.world.waterLevel);
+  const lastIntensityRef = useRef(-1);
 
   const particleData = useMemo(() => {
     const positions = new Float32Array(MAX_PARTICLES * 3);
@@ -29,7 +30,10 @@ export function Rain() {
     if (!pointsRef.current || gameState !== 'playing') return;
 
     const newIntensity = Math.min(1, Math.max(0, (waterLevel + 2) / 15));
-    updateStormIntensity(newIntensity);
+    if (Math.abs(newIntensity - lastIntensityRef.current) > 0.01) {
+      lastIntensityRef.current = newIntensity;
+      updateStormIntensity(newIntensity);
+    }
 
     const activeCount = Math.floor(MAX_PARTICLES * stormIntensity);
     const positions = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;

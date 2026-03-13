@@ -6,12 +6,14 @@ const TERRAIN_SIZE = 200;
 const TERRAIN_SEGMENTS = 128;
 const TERRAIN_HEIGHT = 15;
 
+// Module-level noise instance — shared by both Terrain mesh and getTerrainHeight
+const noise2D = createNoise2D(() => 0.42);
+
 export function Terrain() {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
-    const noise2D = createNoise2D(() => 0.42);
     const positions = geo.attributes.position;
     const colors = new Float32Array(positions.count * 3);
 
@@ -66,7 +68,6 @@ export function Terrain() {
 }
 
 export function getTerrainHeight(x: number, z: number): number {
-  const noise2D = createNoise2D(() => 0.42);
   const dist = Math.sqrt(x * x + z * z);
   const valleyFactor = Math.min(1, dist / 60);
 

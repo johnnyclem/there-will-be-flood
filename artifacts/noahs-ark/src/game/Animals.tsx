@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
@@ -46,9 +46,9 @@ function Animal({ data }: { data: AnimalData }) {
   const gameState = useGameStore((s) => s.gameState);
   const boardAnimal = useGameStore((s) => s.boardAnimal);
   const stormIntensity = useGameStore((s) => s.world.stormIntensity);
-
-  const terrainY = getTerrainHeight(data.startPosition[0], data.startPosition[2]);
-  const isSubmerged = terrainY < waterLevel - 0.5;
+  const [isSubmerged, setIsSubmerged] = useState(false);
+  const [isNearby, setIsNearby] = useState(false);
+  const startTerrainY = getTerrainHeight(data.startPosition[0], data.startPosition[2]);
 
   useFrame((_, delta) => {
     if (!groupRef.current || gameState !== 'playing') return;
@@ -73,7 +73,8 @@ function Animal({ data }: { data: AnimalData }) {
       targetRef.current.set(tx, 0, tz);
     }
 
-    const ty = Math.max(getTerrainHeight(pos.x, pos.z), waterLevel) + data.size[1] / 2;
+    const currentTerrainY = getTerrainHeight(pos.x, pos.z);
+    const ty = Math.max(currentTerrainY, waterLevel) + data.size[1] / 2;
     const dir = new THREE.Vector3(
       targetRef.current.x - pos.x,
       0,
@@ -89,18 +90,21 @@ function Animal({ data }: { data: AnimalData }) {
     }
 
     pos.y += (ty - pos.y) * 0.1;
+
+    // Update submerged/nearby state only when it changes
+    const submerged = currentTerrainY < waterLevel - 0.5;
+    setIsSubmerged((prev) => (prev !== submerged ? submerged : prev));
+
+    const dx = playerPos[0] - pos.x;
+    const dz = playerPos[2] - pos.z;
+    const nearby = dx * dx + dz * dz < 25; // 5^2
+    setIsNearby((prev) => (prev !== nearby ? nearby : prev));
   });
 
   if (isSubmerged) return null;
 
-  const distance = Math.sqrt(
-    (playerPos[0] - data.startPosition[0]) ** 2 +
-    (playerPos[2] - data.startPosition[2]) ** 2
-  );
-  const isNearby = distance < 5;
-
   return (
-    <group ref={groupRef} position={[data.startPosition[0], terrainY + data.size[1] / 2, data.startPosition[2]]}>
+    <group ref={groupRef} position={[data.startPosition[0], startTerrainY + data.size[1] / 2, data.startPosition[2]]}>
       <mesh castShadow>
         <boxGeometry args={data.size} />
         <meshStandardMaterial color={data.color} roughness={0.7} />
