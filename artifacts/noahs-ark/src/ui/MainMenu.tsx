@@ -72,17 +72,8 @@ export function MainMenu() {
           color: '#e8d5a3',
           textTransform: 'uppercase',
         }}>
-          Noah's Ark
+          There Will Be Flood
         </h1>
-        <p style={{
-          fontSize: '22px',
-          color: '#87CEEB',
-          margin: '8px 0 0',
-          letterSpacing: '8px',
-          textTransform: 'uppercase',
-        }}>
-          The Flood
-        </p>
       </div>
 
       <div style={{
