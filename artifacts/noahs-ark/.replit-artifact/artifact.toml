@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Noah's Ark: The Flood"
+version = "1.0.0"
+id = "artifacts/noahs-ark"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 24455
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/noahs-ark run dev"
+
+[services.env]
+PORT = "24455"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/noahs-ark", "run", "build"]
+publicDir = "artifacts/noahs-ark/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"

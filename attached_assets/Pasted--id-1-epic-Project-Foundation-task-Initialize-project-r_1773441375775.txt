@@ -1,0 +1,380 @@
+- id: 1
+  epic: "Project Foundation"
+  task: "Initialize project repository and folder structure"
+  priority: "High"
+- id: 2
+  epic: "Project Foundation"
+  task: "Configure global game state manager (Menu, Play, Pause, Game Over)"
+  priority: "High"
+- id: 3
+  epic: "Project Foundation"
+  task: "Implement input handling for Keyboard/Mouse and Gamepad"
+  priority: "Medium"
+- id: 4
+  epic: "Project Foundation"
+  task: "Set up JSON-based save/load system for world and player state"
+  priority: "High"
+- id: 5
+  epic: "Project Foundation"
+  task: "Define global unit scaling and physics constants"
+  priority: "Low"
+- id: 6
+  epic: "Project Foundation"
+  task: "Integrate asset pipeline for 3D models and textures"
+  priority: "Medium"
+- id: 7
+  epic: "Project Foundation"
+  task: "Develop internal debug console for resource spawning"
+  priority: "Low"
+- id: 8
+  epic: "Project Foundation"
+  task: "Create core camera controller with zoom and tilt constraints"
+  priority: "Medium"
+- id: 9
+  epic: "Environment & Dynamic Water"
+  task: "Generate procedural terrain for the Valley of Shinar"
+  priority: "High"
+- id: 10
+  epic: "Environment & Dynamic Water"
+  task: "Implement the 'Rising Tide' logic to increment water height over time"
+  priority: "High"
+- id: 11
+  epic: "Environment & Dynamic Water"
+  task: "Create dynamic rain particle system synchronized with storm intensity"
+  priority: "Medium"
+- id: 12
+  epic: "Environment & Dynamic Water"
+  task: "Develop shader for water transparency and shoreline foam"
+  priority: "Medium"
+- id: 13
+  epic: "Environment & Dynamic Water"
+  task: "Implement destructible environment assets (trees, rocks, ruins)"
+  priority: "Medium"
+- id: 14
+  epic: "Environment & Dynamic Water"
+  task: "Create lightning strike event logic that can ignite dry terrain"
+  priority: "Low"
+- id: 15
+  epic: "Environment & Dynamic Water"
+  task: "Develop pathfinding system that updates as land is submerged"
+  priority: "High"
+- id: 16
+  epic: "Environment & Dynamic Water"
+  task: "Add atmospheric fog that thickens as the flood approaches"
+  priority: "Low"
+- id: 17
+  epic: "Environment & Dynamic Water"
+  task: "Design visual indicators for 'High Ground' safety zones"
+  priority: "Medium"
+- id: 18
+  epic: "Noah: Player Character"
+  task: "Develop Noah's movement controller (Walk, Sprint, Swim)"
+  priority: "High"
+- id: 19
+  epic: "Noah: Player Character"
+  task: "Implement character animation state machine (Locomotion, Gathering, Combat)"
+  priority: "High"
+- id: 20
+  epic: "Noah: Player Character"
+  task: "Create inventory system for wood, pitch, and holy artifacts"
+  priority: "High"
+- id: 21
+  epic: "Noah: Player Character"
+  task: "Develop 'Prophet's Staff' melee attack mechanics"
+  priority: "Medium"
+- id: 22
+  epic: "Noah: Player Character"
+  task: "Implement stamina system affecting sprint and gathering speed"
+  priority: "Medium"
+- id: 23
+  epic: "Noah: Player Character"
+  task: "Create 'Divine Call' ability to attract distant animals"
+  priority: "Medium"
+- id: 24
+  epic: "Noah: Player Character"
+  task: "Add status effects (Wet, Cold, Inspired)"
+  priority: "Low"
+- id: 25
+  epic: "Noah: Player Character"
+  task: "Implement character-specific tool switching logic (Axe, Hammer, Staff)"
+  priority: "Medium"
+- id: 26
+  epic: "Noah: Player Character"
+  task: "Design character customisation (Robes, Beard styles)"
+  priority: "Low"
+- id: 27
+  epic: "Ark Construction"
+  task: "Design modular Ark hull placement system (Grid-based)"
+  priority: "High"
+- id: 28
+  epic: "Ark Construction"
+  task: "Implement wood-to-structure conversion logic"
+  priority: "High"
+- id: 29
+  epic: "Ark Construction"
+  task: "Create 'Pitch Coating' mechanic for waterproofing sections"
+  priority: "Medium"
+- id: 30
+  epic: "Ark Construction"
+  task: "Develop internal room management (Pens, Storage, Kitchen)"
+  priority: "Medium"
+- id: 31
+  epic: "Ark Construction"
+  task: "Implement Ark buoyancy physics as water level rises"
+  priority: "High"
+- id: 32
+  epic: "Ark Construction"
+  task: "Create structural integrity system (Parts break under stress)"
+  priority: "Medium"
+- id: 33
+  epic: "Ark Construction"
+  task: "Add multi-deck expansion logic (Lower, Middle, Upper decks)"
+  priority: "Medium"
+- id: 34
+  epic: "Ark Construction"
+  task: "Implement boarding ramp deployment mechanics"
+  priority: "High"
+- id: 35
+  epic: "Ark Construction"
+  task: "Create repair system for fixing leaks during storm surges"
+  priority: "High"
+- id: 36
+  epic: "Ark Construction"
+  task: "Add visual progression stages for the Ark's appearance"
+  priority: "Low"
+- id: 37
+  epic: "Ark Construction"
+  task: "Implement lightning rod add-ons for the Ark"
+  priority: "Low"
+- id: 38
+  epic: "Animal Management"
+  task: "Develop base Animal AI (Wandering, Idle, Fleeing)"
+  priority: "High"
+- id: 39
+  epic: "Animal Management"
+  task: "Implement 'Pairing' system (Find male and female of species)"
+  priority: "High"
+- id: 40
+  epic: "Animal Management"
+  task: "Create animal-specific boarding logic (Herding)"
+  priority: "Medium"
+- id: 41
+  epic: "Animal Management"
+  task: "Develop Animal Pen requirements (Space, Food, Temperature)"
+  priority: "Medium"
+- id: 42
+  epic: "Animal Management"
+  task: "Implement unique animal abilities (e.g. Lions defend Ark, Doves scout)"
+  priority: "Medium"
+- id: 43
+  epic: "Animal Management"
+  task: "Create feeding cycle and starvation penalties"
+  priority: "Medium"
+- id: 44
+  epic: "Animal Management"
+  task: "Add species variety (14 clean species, all other pairs)"
+  priority: "Low"
+- id: 45
+  epic: "Animal Management"
+  task: "Implement animal 'Panic' states during heavy storms"
+  priority: "Low"
+- id: 46
+  epic: "Animal Management"
+  task: "Develop animal waste management system (Sanitation)"
+  priority: "Low"
+- id: 47
+  epic: "Animal Management"
+  task: "Create the Bestiary UI to track collected species"
+  priority: "Medium"
+- id: 48
+  epic: "Animal Management"
+  task: "Implement rare/mythical animal variants for side quests"
+  priority: "Low"
+- id: 49
+  epic: "Combat & Defense"
+  task: "Develop 'Sinner' enemy AI (Human raiders attempting to board)"
+  priority: "High"
+- id: 50
+  epic: "Combat & Defense"
+  task: "Implement wave-based attack logic synchronized with flood levels"
+  priority: "High"
+- id: 51
+  epic: "Combat & Defense"
+  task: "Create primitive projectile logic for enemies (Rocks, Spears)"
+  priority: "Medium"
+- id: 52
+  epic: "Combat & Defense"
+  task: "Develop defensive structure building (Barricades, Spikes)"
+  priority: "Medium"
+- id: 53
+  epic: "Combat & Defense"
+  task: "Implement 'Divine Intervention' skills (Shockwaves, Blinding Light)"
+  priority: "Medium"
+- id: 54
+  epic: "Combat & Defense"
+  task: "Create combat feedback effects (Screen shake, Blood splatter, Hit sounds)"
+  priority: "Medium"
+- id: 55
+  epic: "Combat & Defense"
+  task: "Design Boss enemy 'Nephilim Giant' with unique mechanics"
+  priority: "Low"
+- id: 56
+  epic: "Combat & Defense"
+  task: "Implement Ark-mounted defenses (Ballistae, Pitch throwers)"
+  priority: "Low"
+- id: 57
+  epic: "Combat & Defense"
+  task: "Develop 'Desperation' mechanic (Enemies fight harder as land shrinks)"
+  priority: "Medium"
+- id: 58
+  epic: "Combat & Defense"
+  task: "Create enemy raft/boat AI for post-flood skirmishes"
+  priority: "Medium"
+- id: 59
+  epic: "Combat & Defense"
+  task: "Implement stealth mechanics for Noah to avoid large mobs"
+  priority: "Low"
+- id: 60
+  epic: "Combat & Defense"
+  task: "Add enemy looting of the Ark's food supplies"
+  priority: "Medium"
+- id: 61
+  epic: "Survival Mechanics"
+  task: "Implement 'Faith' as a primary resource currency"
+  priority: "High"
+- id: 62
+  epic: "Survival Mechanics"
+  task: "Develop food spoilage system for stored grains"
+  priority: "Low"
+- id: 63
+  epic: "Survival Mechanics"
+  task: "Create 'Gopher Wood' rare resource nodes for higher tiers"
+  priority: "Medium"
+- id: 64
+  epic: "Survival Mechanics"
+  task: "Implement hunger and thirst bars for Noah"
+  priority: "Medium"
+- id: 65
+  epic: "Survival Mechanics"
+  task: "Add 'Moral Dilemma' pop-up events (Save a human or an animal?)"
+  priority: "Medium"
+- id: 66
+  epic: "Survival Mechanics"
+  task: "Develop resource refining system (Logs to Planks)"
+  priority: "Medium"
+- id: 67
+  epic: "Survival Mechanics"
+  task: "Create tool durability and sharpening mechanic"
+  priority: "Low"
+- id: 68
+  epic: "Survival Mechanics"
+  task: "Implement 'Scavenging' from sunken buildings during low tide"
+  priority: "Low"
+- id: 69
+  epic: "Survival Mechanics"
+  task: "Develop trade system with neutral nomadic survivors"
+  priority: "Low"
+- id: 70
+  epic: "Survival Mechanics"
+  task: "Add dynamic weight limit for the Ark (Too many resources sink it)"
+  priority: "Medium"
+- id: 71
+  epic: "Survival Mechanics"
+  task: "Implement 'Holy Favour' buffs granted by fulfilling divine tasks"
+  priority: "Medium"
+- id: 72
+  epic: "UI/UX"
+  task: "Design main menu with parallax flood background"
+  priority: "Low"
+- id: 73
+  epic: "UI/UX"
+  task: "Create in-game HUD (Resource counts, Health, Tide level)"
+  priority: "High"
+- id: 74
+  epic: "UI/UX"
+  task: "Develop the Ark Construction Blueprint interface"
+  priority: "High"
+- id: 75
+  epic: "UI/UX"
+  task: "Implement world map showing flood progression across regions"
+  priority: "Medium"
+- id: 76
+  epic: "UI/UX"
+  task: "Create 'Animal Mood' icons for quick pen management"
+  priority: "Medium"
+- id: 77
+  epic: "UI/UX"
+  task: "Design context-sensitive interaction prompts (E to Gather)"
+  priority: "High"
+- id: 78
+  epic: "UI/UX"
+  task: "Develop a settings menu (Audio, Video, Keybinds)"
+  priority: "Low"
+- id: 79
+  epic: "UI/UX"
+  task: "Implement loading screens with biblical lore and tips"
+  priority: "Low"
+- id: 80
+  epic: "UI/UX"
+  task: "Create 'Victory' and 'Defeat' splash screens"
+  priority: "High"
+- id: 81
+  epic: "Audio & VFX"
+  task: "Design ambient 'Raging Storm' soundscapes"
+  priority: "Medium"
+- id: 82
+  epic: "Audio & VFX"
+  task: "Implement Noah's voice barks for gathering and combat"
+  priority: "Low"
+- id: 83
+  epic: "Audio & VFX"
+  task: "Create unique SFX for every animal species in-game"
+  priority: "Low"
+- id: 84
+  epic: "Audio & VFX"
+  task: "Develop 'Construction Hammering' sound variations"
+  priority: "Medium"
+- id: 85
+  epic: "Audio & VFX"
+  task: "Implement a dynamic music system that swells during combat"
+  priority: "Medium"
+- id: 86
+  epic: "Audio & VFX"
+  task: "Create VFX for Divine Wrath abilities (Light beams, Earthquakes)"
+  priority: "High"
+- id: 87
+  epic: "Audio & VFX"
+  task: "Add water splash SFX for movement and falling objects"
+  priority: "Medium"
+- id: 88
+  epic: "Audio & VFX"
+  task: "Design UI 'Click' and 'Hover' audio feedback"
+  priority: "Low"
+- id: 89
+  epic: "Optimization & Polish"
+  task: "Perform occlusion culling on dense forests and Ark interior"
+  priority: "High"
+- id: 90
+  epic: "Optimization & Polish"
+  task: "Optimize dynamic water mesh performance for mid-range PCs"
+  priority: "High"
+- id: 91
+  epic: "Optimization & Polish"
+  task: "Conduct balancing pass on resource gathering rates"
+  priority: "Medium"
+- id: 92
+  epic: "Optimization & Polish"
+  task: "Implement Steam Achievement integration"
+  priority: "Low"
+- id: 93
+  epic: "Optimization & Polish"
+  task: "Fix clipping issues between Ark walls and large animals"
+  priority: "Medium"
+- id: 94
+  epic: "Optimization & Polish"
+  task: "Finalize localization files for English, Spanish, and Hebrew"
+  priority: "Low"
+- id: 95
+  epic: "Optimization & Polish"
+  task: "Create end-of-game cinematic for the arrival at Ararat"
+  priority: "Low"
