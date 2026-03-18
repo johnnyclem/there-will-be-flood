@@ -43,6 +43,440 @@ const ARK_RANGE_SQ = 225; // 15^2
 // Reusable Vector3 to avoid GC pressure
 const _dir = new THREE.Vector3();
 
+// Per-species leg helper
+function Legs({ color, size, legRadius = 0.07, legColor }: {
+  color: string; size: [number, number, number]; legRadius?: number; legColor?: string;
+}) {
+  const c = legColor || color;
+  const h = size[1] * 0.5;
+  return (
+    <>
+      <mesh castShadow position={[-size[0] * 0.28, -size[1] * 0.35, size[2] * 0.25]}>
+        <cylinderGeometry args={[legRadius, legRadius * 1.1, h, 5]} />
+        <meshStandardMaterial color={c} roughness={0.8} />
+      </mesh>
+      <mesh castShadow position={[size[0] * 0.28, -size[1] * 0.35, size[2] * 0.25]}>
+        <cylinderGeometry args={[legRadius, legRadius * 1.1, h, 5]} />
+        <meshStandardMaterial color={c} roughness={0.8} />
+      </mesh>
+      <mesh castShadow position={[-size[0] * 0.28, -size[1] * 0.35, -size[2] * 0.25]}>
+        <cylinderGeometry args={[legRadius, legRadius * 1.1, h, 5]} />
+        <meshStandardMaterial color={c} roughness={0.8} />
+      </mesh>
+      <mesh castShadow position={[size[0] * 0.28, -size[1] * 0.35, -size[2] * 0.25]}>
+        <cylinderGeometry args={[legRadius, legRadius * 1.1, h, 5]} />
+        <meshStandardMaterial color={c} roughness={0.8} />
+      </mesh>
+    </>
+  );
+}
+
+function AnimalModel({ species, color, size }: { species: string; color: string; size: [number, number, number] }) {
+  const [w, h, d] = size;
+
+  if (species === 'Lion') {
+    return (
+      <group>
+        {/* Rounded body */}
+        <mesh castShadow>
+          <sphereGeometry args={[d * 0.4, 8, 6]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        {/* Head */}
+        <mesh castShadow position={[0, h * 0.2, d * 0.45]}>
+          <sphereGeometry args={[w * 0.32, 7, 5]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+        {/* Mane — bushy ring around head */}
+        <mesh castShadow position={[0, h * 0.22, d * 0.4]}>
+          <sphereGeometry args={[w * 0.48, 6, 5]} />
+          <meshStandardMaterial color="#A07830" roughness={0.9} />
+        </mesh>
+        {/* Snout */}
+        <mesh castShadow position={[0, h * 0.08, d * 0.62]}>
+          <sphereGeometry args={[w * 0.14, 5, 4]} />
+          <meshStandardMaterial color="#D4B87A" roughness={0.7} />
+        </mesh>
+        {/* Eyes */}
+        <mesh position={[-w * 0.12, h * 0.3, d * 0.6]}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        <mesh position={[w * 0.12, h * 0.3, d * 0.6]}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        {/* Ears */}
+        <mesh castShadow position={[-w * 0.2, h * 0.45, d * 0.38]}>
+          <sphereGeometry args={[0.08, 4, 4]} />
+          <meshStandardMaterial color="#A07830" roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[w * 0.2, h * 0.45, d * 0.38]}>
+          <sphereGeometry args={[0.08, 4, 4]} />
+          <meshStandardMaterial color="#A07830" roughness={0.8} />
+        </mesh>
+        {/* Tail */}
+        <mesh castShadow position={[0, h * 0.1, -d * 0.5]} rotation={[0.6, 0, 0]}>
+          <cylinderGeometry args={[0.03, 0.02, d * 0.5, 4]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        {/* Tail tuft */}
+        <mesh castShadow position={[0, h * 0.3, -d * 0.7]}>
+          <sphereGeometry args={[0.07, 4, 4]} />
+          <meshStandardMaterial color="#A07830" roughness={0.9} />
+        </mesh>
+        <Legs color={color} size={size} legRadius={0.07} />
+      </group>
+    );
+  }
+
+  if (species === 'Elephant') {
+    return (
+      <group>
+        {/* Big round body */}
+        <mesh castShadow>
+          <sphereGeometry args={[d * 0.42, 8, 7]} />
+          <meshStandardMaterial color={color} roughness={0.85} />
+        </mesh>
+        {/* Head */}
+        <mesh castShadow position={[0, h * 0.25, d * 0.42]}>
+          <sphereGeometry args={[w * 0.38, 7, 6]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        {/* Trunk — segmented cylinders curving down */}
+        <mesh castShadow position={[0, -h * 0.05, d * 0.65]} rotation={[0.3, 0, 0]}>
+          <cylinderGeometry args={[0.1, 0.08, h * 0.6, 5]} />
+          <meshStandardMaterial color="#7a7a7a" roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[0, -h * 0.35, d * 0.72]} rotation={[0.8, 0, 0]}>
+          <cylinderGeometry args={[0.08, 0.05, h * 0.35, 5]} />
+          <meshStandardMaterial color="#7a7a7a" roughness={0.8} />
+        </mesh>
+        {/* Big ears */}
+        <mesh castShadow position={[-w * 0.45, h * 0.25, d * 0.3]} rotation={[0, 0.4, 0]}>
+          <sphereGeometry args={[w * 0.3, 5, 4]} />
+          <meshStandardMaterial color="#777" roughness={0.85} side={THREE.DoubleSide} />
+        </mesh>
+        <mesh castShadow position={[w * 0.45, h * 0.25, d * 0.3]} rotation={[0, -0.4, 0]}>
+          <sphereGeometry args={[w * 0.3, 5, 4]} />
+          <meshStandardMaterial color="#777" roughness={0.85} side={THREE.DoubleSide} />
+        </mesh>
+        {/* Tusks */}
+        <mesh castShadow position={[-0.12, -h * 0.05, d * 0.6]} rotation={[0.4, 0, 0.15]}>
+          <coneGeometry args={[0.04, 0.3, 4]} />
+          <meshStandardMaterial color="#F5F0E0" roughness={0.5} />
+        </mesh>
+        <mesh castShadow position={[0.12, -h * 0.05, d * 0.6]} rotation={[0.4, 0, -0.15]}>
+          <coneGeometry args={[0.04, 0.3, 4]} />
+          <meshStandardMaterial color="#F5F0E0" roughness={0.5} />
+        </mesh>
+        {/* Eyes */}
+        <mesh position={[-w * 0.18, h * 0.35, d * 0.58]}>
+          <sphereGeometry args={[0.05, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        <mesh position={[w * 0.18, h * 0.35, d * 0.58]}>
+          <sphereGeometry args={[0.05, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        {/* Tail */}
+        <mesh castShadow position={[0, h * 0.05, -d * 0.45]} rotation={[0.5, 0, 0]}>
+          <cylinderGeometry args={[0.03, 0.015, d * 0.3, 4]} />
+          <meshStandardMaterial color="#777" roughness={0.8} />
+        </mesh>
+        <Legs color={color} size={size} legRadius={0.12} legColor="#7a7a7a" />
+      </group>
+    );
+  }
+
+  if (species === 'Dove') {
+    return (
+      <group>
+        {/* Round body */}
+        <mesh castShadow>
+          <sphereGeometry args={[d * 0.45, 7, 5]} />
+          <meshStandardMaterial color={color} roughness={0.65} />
+        </mesh>
+        {/* Head */}
+        <mesh castShadow position={[0, h * 0.35, d * 0.3]}>
+          <sphereGeometry args={[w * 0.4, 6, 5]} />
+          <meshStandardMaterial color={color} roughness={0.6} />
+        </mesh>
+        {/* Beak */}
+        <mesh castShadow position={[0, h * 0.2, d * 0.55]} rotation={[0.3, 0, 0]}>
+          <coneGeometry args={[0.025, 0.08, 4]} />
+          <meshStandardMaterial color="#E8A030" roughness={0.6} />
+        </mesh>
+        {/* Eyes */}
+        <mesh position={[-w * 0.15, h * 0.42, d * 0.42]}>
+          <sphereGeometry args={[0.02, 4, 4]} />
+          <meshStandardMaterial color="#111" />
+        </mesh>
+        <mesh position={[w * 0.15, h * 0.42, d * 0.42]}>
+          <sphereGeometry args={[0.02, 4, 4]} />
+          <meshStandardMaterial color="#111" />
+        </mesh>
+        {/* Left wing */}
+        <mesh castShadow position={[-w * 0.45, h * 0.1, -d * 0.1]} rotation={[0, 0, -0.3]}>
+          <boxGeometry args={[w * 0.5, 0.02, d * 0.55]} />
+          <meshStandardMaterial color="#CCCCCC" roughness={0.7} />
+        </mesh>
+        {/* Right wing */}
+        <mesh castShadow position={[w * 0.45, h * 0.1, -d * 0.1]} rotation={[0, 0, 0.3]}>
+          <boxGeometry args={[w * 0.5, 0.02, d * 0.55]} />
+          <meshStandardMaterial color="#CCCCCC" roughness={0.7} />
+        </mesh>
+        {/* Tail feathers */}
+        <mesh castShadow position={[0, h * 0.1, -d * 0.45]} rotation={[-0.3, 0, 0]}>
+          <boxGeometry args={[w * 0.35, 0.02, d * 0.35]} />
+          <meshStandardMaterial color="#BBBBBB" roughness={0.7} />
+        </mesh>
+      </group>
+    );
+  }
+
+  if (species === 'Horse') {
+    return (
+      <group>
+        {/* Elongated body */}
+        <mesh castShadow>
+          <boxGeometry args={[w * 0.85, h * 0.7, d]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        {/* Neck — angled up */}
+        <mesh castShadow position={[0, h * 0.4, d * 0.38]} rotation={[-0.5, 0, 0]}>
+          <cylinderGeometry args={[w * 0.18, w * 0.22, h * 0.6, 6]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        {/* Head — elongated box */}
+        <mesh castShadow position={[0, h * 0.55, d * 0.55]}>
+          <boxGeometry args={[w * 0.35, h * 0.3, d * 0.35]} />
+          <meshStandardMaterial color={color} roughness={0.7} />
+        </mesh>
+        {/* Snout */}
+        <mesh castShadow position={[0, h * 0.42, d * 0.7]}>
+          <boxGeometry args={[w * 0.25, h * 0.2, d * 0.2]} />
+          <meshStandardMaterial color="#7A3E10" roughness={0.7} />
+        </mesh>
+        {/* Eyes */}
+        <mesh position={[-w * 0.15, h * 0.6, d * 0.65]}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        <mesh position={[w * 0.15, h * 0.6, d * 0.65]}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        {/* Ears */}
+        <mesh castShadow position={[-w * 0.1, h * 0.75, d * 0.5]} rotation={[0.2, 0, -0.2]}>
+          <coneGeometry args={[0.04, 0.15, 4]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[w * 0.1, h * 0.75, d * 0.5]} rotation={[0.2, 0, 0.2]}>
+          <coneGeometry args={[0.04, 0.15, 4]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        {/* Mane — ridge along neck */}
+        <mesh castShadow position={[0, h * 0.55, d * 0.3]} rotation={[-0.4, 0, 0]}>
+          <boxGeometry args={[0.04, h * 0.25, d * 0.35]} />
+          <meshStandardMaterial color="#2A1508" roughness={0.9} />
+        </mesh>
+        {/* Tail */}
+        <mesh castShadow position={[0, h * 0.05, -d * 0.55]} rotation={[0.8, 0, 0]}>
+          <cylinderGeometry args={[0.04, 0.01, d * 0.5, 4]} />
+          <meshStandardMaterial color="#2A1508" roughness={0.9} />
+        </mesh>
+        <Legs color={color} size={size} legRadius={0.06} />
+      </group>
+    );
+  }
+
+  if (species === 'Sheep') {
+    return (
+      <group>
+        {/* Puffy woolly body — big sphere */}
+        <mesh castShadow>
+          <sphereGeometry args={[d * 0.48, 7, 6]} />
+          <meshStandardMaterial color="#F0ECD8" roughness={0.95} />
+        </mesh>
+        {/* Extra wool bumps */}
+        <mesh castShadow position={[0, h * 0.25, 0]}>
+          <sphereGeometry args={[d * 0.38, 5, 4]} />
+          <meshStandardMaterial color="#E8E4D0" roughness={0.95} />
+        </mesh>
+        <mesh castShadow position={[w * 0.15, h * 0.05, d * 0.15]}>
+          <sphereGeometry args={[d * 0.25, 5, 4]} />
+          <meshStandardMaterial color="#F5F0E0" roughness={0.95} />
+        </mesh>
+        {/* Small dark head */}
+        <mesh castShadow position={[0, h * 0.15, d * 0.42]}>
+          <sphereGeometry args={[w * 0.28, 6, 5]} />
+          <meshStandardMaterial color="#3A3A3A" roughness={0.7} />
+        </mesh>
+        {/* Eyes */}
+        <mesh position={[-w * 0.1, h * 0.22, d * 0.55]}>
+          <sphereGeometry args={[0.03, 4, 4]} />
+          <meshStandardMaterial color="#FFD700" />
+        </mesh>
+        <mesh position={[w * 0.1, h * 0.22, d * 0.55]}>
+          <sphereGeometry args={[0.03, 4, 4]} />
+          <meshStandardMaterial color="#FFD700" />
+        </mesh>
+        {/* Ears — floppy */}
+        <mesh castShadow position={[-w * 0.22, h * 0.15, d * 0.38]} rotation={[0, 0, -0.5]}>
+          <sphereGeometry args={[0.06, 4, 3]} />
+          <meshStandardMaterial color="#333" roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[w * 0.22, h * 0.15, d * 0.38]} rotation={[0, 0, 0.5]}>
+          <sphereGeometry args={[0.06, 4, 3]} />
+          <meshStandardMaterial color="#333" roughness={0.8} />
+        </mesh>
+        {/* Short tail puff */}
+        <mesh castShadow position={[0, h * 0.1, -d * 0.4]}>
+          <sphereGeometry args={[0.1, 4, 4]} />
+          <meshStandardMaterial color="#F0ECD8" roughness={0.95} />
+        </mesh>
+        <Legs color="#3A3A3A" size={size} legRadius={0.04} />
+      </group>
+    );
+  }
+
+  if (species === 'Wolf') {
+    return (
+      <group>
+        {/* Lean body */}
+        <mesh castShadow>
+          <boxGeometry args={[w * 0.75, h * 0.65, d]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        {/* Head */}
+        <mesh castShadow position={[0, h * 0.2, d * 0.45]}>
+          <boxGeometry args={[w * 0.5, h * 0.45, d * 0.35]} />
+          <meshStandardMaterial color={color} roughness={0.75} />
+        </mesh>
+        {/* Narrow snout */}
+        <mesh castShadow position={[0, h * 0.1, d * 0.65]}>
+          <boxGeometry args={[w * 0.25, h * 0.22, d * 0.25]} />
+          <meshStandardMaterial color="#4A4A4A" roughness={0.75} />
+        </mesh>
+        {/* Nose */}
+        <mesh position={[0, h * 0.12, d * 0.78]}>
+          <sphereGeometry args={[0.035, 4, 4]} />
+          <meshStandardMaterial color="#111" />
+        </mesh>
+        {/* Eyes — amber */}
+        <mesh position={[-w * 0.13, h * 0.28, d * 0.58]}>
+          <sphereGeometry args={[0.035, 4, 4]} />
+          <meshStandardMaterial color="#D4A020" />
+        </mesh>
+        <mesh position={[w * 0.13, h * 0.28, d * 0.58]}>
+          <sphereGeometry args={[0.035, 4, 4]} />
+          <meshStandardMaterial color="#D4A020" />
+        </mesh>
+        {/* Pointed ears */}
+        <mesh castShadow position={[-w * 0.15, h * 0.5, d * 0.4]}>
+          <coneGeometry args={[0.06, 0.18, 4]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        <mesh castShadow position={[w * 0.15, h * 0.5, d * 0.4]}>
+          <coneGeometry args={[0.06, 0.18, 4]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        {/* Bushy tail — curving up */}
+        <mesh castShadow position={[0, h * 0.15, -d * 0.5]} rotation={[0.9, 0, 0]}>
+          <cylinderGeometry args={[0.06, 0.03, d * 0.45, 5]} />
+          <meshStandardMaterial color="#4A4A4A" roughness={0.9} />
+        </mesh>
+        <mesh castShadow position={[0, h * 0.38, -d * 0.62]}>
+          <sphereGeometry args={[0.08, 4, 4]} />
+          <meshStandardMaterial color="#666" roughness={0.9} />
+        </mesh>
+        {/* Belly lighter patch */}
+        <mesh castShadow position={[0, -h * 0.15, 0]}>
+          <boxGeometry args={[w * 0.5, h * 0.2, d * 0.6]} />
+          <meshStandardMaterial color="#7A7A7A" roughness={0.8} />
+        </mesh>
+        <Legs color={color} size={size} legRadius={0.05} />
+      </group>
+    );
+  }
+
+  if (species === 'Bear') {
+    return (
+      <group>
+        {/* Bulky round body */}
+        <mesh castShadow>
+          <sphereGeometry args={[d * 0.45, 8, 6]} />
+          <meshStandardMaterial color={color} roughness={0.85} />
+        </mesh>
+        {/* Hump/shoulders */}
+        <mesh castShadow position={[0, h * 0.2, d * 0.15]}>
+          <sphereGeometry args={[w * 0.42, 6, 5]} />
+          <meshStandardMaterial color={color} roughness={0.85} />
+        </mesh>
+        {/* Head */}
+        <mesh castShadow position={[0, h * 0.2, d * 0.42]}>
+          <sphereGeometry args={[w * 0.35, 7, 5]} />
+          <meshStandardMaterial color={color} roughness={0.8} />
+        </mesh>
+        {/* Snout — lighter */}
+        <mesh castShadow position={[0, h * 0.08, d * 0.6]}>
+          <sphereGeometry args={[w * 0.15, 5, 4]} />
+          <meshStandardMaterial color="#6B5040" roughness={0.75} />
+        </mesh>
+        {/* Nose */}
+        <mesh position={[0, h * 0.12, d * 0.68]}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshStandardMaterial color="#111" />
+        </mesh>
+        {/* Eyes */}
+        <mesh position={[-w * 0.13, h * 0.28, d * 0.55]}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        <mesh position={[w * 0.13, h * 0.28, d * 0.55]}>
+          <sphereGeometry args={[0.04, 4, 4]} />
+          <meshStandardMaterial color="#222" />
+        </mesh>
+        {/* Small round ears */}
+        <mesh castShadow position={[-w * 0.22, h * 0.42, d * 0.35]}>
+          <sphereGeometry args={[0.09, 5, 4]} />
+          <meshStandardMaterial color={color} roughness={0.85} />
+        </mesh>
+        <mesh castShadow position={[w * 0.22, h * 0.42, d * 0.35]}>
+          <sphereGeometry args={[0.09, 5, 4]} />
+          <meshStandardMaterial color={color} roughness={0.85} />
+        </mesh>
+        {/* Inner ears */}
+        <mesh position={[-w * 0.22, h * 0.42, d * 0.38]}>
+          <sphereGeometry args={[0.05, 4, 3]} />
+          <meshStandardMaterial color="#5A4535" />
+        </mesh>
+        <mesh position={[w * 0.22, h * 0.42, d * 0.38]}>
+          <sphereGeometry args={[0.05, 4, 3]} />
+          <meshStandardMaterial color="#5A4535" />
+        </mesh>
+        <Legs color={color} size={size} legRadius={0.1} legColor="#3D2A1A" />
+      </group>
+    );
+  }
+
+  // Fallback generic shape
+  return (
+    <group>
+      <mesh castShadow>
+        <boxGeometry args={size} />
+        <meshStandardMaterial color={color} roughness={0.7} />
+      </mesh>
+      <mesh castShadow position={[0, h * 0.3, d * 0.45]}>
+        <boxGeometry args={[w * 0.6, h * 0.6, d * 0.3]} />
+        <meshStandardMaterial color={color} roughness={0.7} />
+      </mesh>
+      {h > 0.3 && <Legs color={color} size={size} />}
+    </group>
+  );
+}
+
 function Animal({ data }: { data: AnimalData }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3(...data.startPosition));
@@ -109,35 +543,7 @@ function Animal({ data }: { data: AnimalData }) {
 
   return (
     <group ref={groupRef} position={[data.startPosition[0], startTerrainY + data.size[1] / 2, data.startPosition[2]]}>
-      <mesh castShadow>
-        <boxGeometry args={data.size} />
-        <meshStandardMaterial color={data.color} roughness={0.7} />
-      </mesh>
-      <mesh castShadow position={[0, data.size[1] * 0.3, data.size[2] * 0.45]}>
-        <boxGeometry args={[data.size[0] * 0.6, data.size[1] * 0.6, data.size[2] * 0.3]} />
-        <meshStandardMaterial color={data.color} roughness={0.7} />
-      </mesh>
-
-      {data.size[1] > 0.3 && (
-        <>
-          <mesh castShadow position={[-data.size[0] * 0.3, -data.size[1] * 0.3, data.size[2] * 0.25]}>
-            <cylinderGeometry args={[0.06, 0.06, data.size[1] * 0.6, 4]} />
-            <meshStandardMaterial color={data.color} roughness={0.8} />
-          </mesh>
-          <mesh castShadow position={[data.size[0] * 0.3, -data.size[1] * 0.3, data.size[2] * 0.25]}>
-            <cylinderGeometry args={[0.06, 0.06, data.size[1] * 0.6, 4]} />
-            <meshStandardMaterial color={data.color} roughness={0.8} />
-          </mesh>
-          <mesh castShadow position={[-data.size[0] * 0.3, -data.size[1] * 0.3, -data.size[2] * 0.25]}>
-            <cylinderGeometry args={[0.06, 0.06, data.size[1] * 0.6, 4]} />
-            <meshStandardMaterial color={data.color} roughness={0.8} />
-          </mesh>
-          <mesh castShadow position={[data.size[0] * 0.3, -data.size[1] * 0.3, -data.size[2] * 0.25]}>
-            <cylinderGeometry args={[0.06, 0.06, data.size[1] * 0.6, 4]} />
-            <meshStandardMaterial color={data.color} roughness={0.8} />
-          </mesh>
-        </>
-      )}
+      <AnimalModel species={data.species} color={data.color} size={data.size} />
 
       {isNearby && (
         <Html center position={[0, data.size[1] + 0.5, 0]} style={{ pointerEvents: 'none' }}>
