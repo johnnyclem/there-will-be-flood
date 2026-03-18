@@ -36,6 +36,12 @@ function ResourceNodeMesh({ node, onGather }: { node: ResourceNode; onGather: ()
   const waterLevel = useGameStore((s) => s.world.waterLevel);
   const isSubmerged = node.position[1] < waterLevel - 0.5;
 
+  const handleClick = useCallback(() => {
+    if (isNearby && node.amount > 0) {
+      onGather();
+    }
+  }, [isNearby, node.amount, onGather]);
+
   // Check distance in useFrame to avoid re-renders from playerPos subscription
   useFrame(() => {
     if (!meshRef.current || gameState !== 'playing') return;
@@ -61,12 +67,6 @@ function ResourceNodeMesh({ node, onGather }: { node: ResourceNode; onGather: ()
     food: '#DAA520',
     gopherWood: '#D2691E',
   };
-
-  const handleClick = useCallback(() => {
-    if (isNearby && node.amount > 0) {
-      onGather();
-    }
-  }, [isNearby, node.amount, onGather]);
 
   return (
     <group position={node.position}>
@@ -181,14 +181,18 @@ export function Resources() {
   });
 
   const handleGather = useCallback((nodeId: number) => {
+    let resourceType: ResourceNode['type'] | null = null;
     setNodes((prev) =>
       prev.map((n) => {
         if (n.id !== nodeId || n.amount <= 0) return n;
-        addResource(n.type, 1);
-        updateFaith(1);
+        resourceType = n.type;
         return { ...n, amount: n.amount - 1 };
       })
     );
+    if (resourceType) {
+      addResource(resourceType, 1);
+      updateFaith(1);
+    }
   }, [addResource, updateFaith]);
 
   // E key handler: gather from nearest resource within range
