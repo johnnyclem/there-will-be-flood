@@ -1,23 +1,11 @@
 import { useEffect } from "react";
 import { useGameStore } from "../store/gameStore";
 
-const ARK_INTERACT_RANGE_SQ = 144; // 12^2
-
-function isNearArk(): boolean {
-  const { player, ark } = useGameStore.getState();
-  if (!ark.position) return false;
-  const dx = player.position[0] - ark.position[0];
-  const dz = player.position[2] - ark.position[2];
-  return dx * dx + dz * dz < ARK_INTERACT_RANGE_SQ;
-}
-
 export function InteractionSystem() {
   const gameState = useGameStore((s) => s.gameState);
   const pauseGame = useGameStore((s) => s.pauseGame);
   const resumeGame = useGameStore((s) => s.resumeGame);
-  const buildArkSection = useGameStore((s) => s.buildArkSection);
-  const coatWithPitch = useGameStore((s) => s.coatWithPitch);
-  const placeArk = useGameStore((s) => s.placeArk);
+  const toggleBuildMenu = useGameStore((s) => s.toggleBuildMenu);
   const gameOver = useGameStore((s) => s.gameOver);
   const updateHealth = useGameStore((s) => s.updateHealth);
   const incrementDay = useGameStore((s) => s.incrementDay);
@@ -88,24 +76,13 @@ export function InteractionSystem() {
       if (gameState !== "playing") return;
 
       if (e.key === "b" || e.key === "B") {
-        const { ark, player } = useGameStore.getState();
-        if (!ark.position) {
-          // Place the ark at the player's current position
-          placeArk([player.position[0], player.position[1], player.position[2]]);
-        } else if (isNearArk()) {
-          buildArkSection();
-        }
-      }
-      if (e.key === "p" || e.key === "P") {
-        if (isNearArk()) {
-          coatWithPitch();
-        }
+        toggleBuildMenu();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameState, pauseGame, resumeGame, buildArkSection, coatWithPitch, placeArk]);
+  }, [gameState, pauseGame, resumeGame, toggleBuildMenu]);
 
   return null;
 }

@@ -18,11 +18,7 @@ export function Ark() {
 
   const buildProgress = sectionsBuilt / totalSections;
 
-  // Don't render if ark hasn't been placed yet
-  if (!arkPosition) return null;
-
-  const terrainY = getTerrainHeight(arkPosition[0], arkPosition[2]);
-
+  // useMemo must be called before any early return (React rules of hooks)
   const sections = useMemo(() => {
     const result: { offset: number; index: number }[] = [];
     const sectionWidth = ARK_LENGTH / totalSections;
@@ -34,6 +30,11 @@ export function Ark() {
     }
     return result;
   }, [totalSections]);
+
+  // Don't render if ark hasn't been placed yet
+  if (!arkPosition) return null;
+
+  const terrainY = getTerrainHeight(arkPosition[0], arkPosition[2]);
 
   return (
     <group position={[arkPosition[0], terrainY, arkPosition[2]]}>

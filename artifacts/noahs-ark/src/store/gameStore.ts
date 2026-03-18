@@ -50,11 +50,13 @@ interface GameStore {
   world: WorldState;
   score: number;
   resetCounter: number;
+  buildMenuOpen: boolean;
   setGameState: (state: GameState) => void;
   startGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
   gameOver: (victory: boolean) => void;
+  toggleBuildMenu: () => void;
   updateWaterLevel: (delta: number) => void;
   updateStormIntensity: (intensity: number) => void;
   addResource: (resource: keyof Inventory, amount: number) => void;
@@ -117,6 +119,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   world: { ...initialWorld },
   score: 0,
   resetCounter: 0,
+  buildMenuOpen: false,
 
   setGameState: (state) => set({ gameState: state }),
 
@@ -127,12 +130,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
     world: { ...initialWorld },
     score: 0,
     resetCounter: state.resetCounter + 1,
+    buildMenuOpen: false,
   })),
 
-  pauseGame: () => set({ gameState: 'paused' }),
+  pauseGame: () => set({ gameState: 'paused', buildMenuOpen: false }),
   resumeGame: () => set({ gameState: 'playing' }),
 
-  gameOver: (victory) => set({ gameState: victory ? 'victory' : 'gameover' }),
+  gameOver: (victory) => set({ gameState: victory ? 'victory' : 'gameover', buildMenuOpen: false }),
+
+  toggleBuildMenu: () => set((state) => ({ buildMenuOpen: !state.buildMenuOpen })),
 
   updateWaterLevel: (delta) => set((state) => {
     const newLevel = state.world.waterLevel + delta;

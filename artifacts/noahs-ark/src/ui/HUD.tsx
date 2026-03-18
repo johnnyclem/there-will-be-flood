@@ -1,5 +1,4 @@
 import { useGameStore } from '../store/gameStore';
-import { getTerrainHeight } from '../game/Terrain';
 
 function ProgressBar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
@@ -23,57 +22,6 @@ function ProgressBar({ value, max, color, label }: { value: number; max: number;
           borderRadius: '4px',
           transition: 'width 0.3s',
         }} />
-      </div>
-    </div>
-  );
-}
-
-function ArkPlacementHint({ playerPosition }: { playerPosition: [number, number, number] }) {
-  const elevation = getTerrainHeight(playerPosition[0], playerPosition[2]);
-  const isHighGround = elevation > 5;
-  const isLowGround = elevation < 1;
-  const isMidGround = !isHighGround && !isLowGround;
-
-  let terrainLabel: string;
-  let terrainColor: string;
-  let pros: string;
-  let cons: string;
-
-  if (isHighGround) {
-    terrainLabel = 'High Ground';
-    terrainColor = '#e67e22';
-    pros = 'Safe from early floods';
-    cons = 'Harder for animals to reach';
-  } else if (isLowGround) {
-    terrainLabel = 'Low Ground';
-    terrainColor = '#3498db';
-    pros = 'Easy animal access';
-    cons = 'Floods sooner — build fast!';
-  } else {
-    terrainLabel = 'Mid Elevation';
-    terrainColor = '#2ecc71';
-    pros = 'Balanced location';
-    cons = 'No major advantages';
-  }
-
-  return (
-    <div>
-      <div style={{
-        fontSize: '12px',
-        color: '#ffdd00',
-        marginBottom: '6px',
-        animation: 'pulse 1.5s ease-in-out infinite',
-      }}>
-        Press [B] to place the Ark here
-      </div>
-      <div style={{ fontSize: '11px', color: terrainColor, marginBottom: '4px' }}>
-        Terrain: {terrainLabel} (elev: {elevation.toFixed(1)})
-      </div>
-      <div style={{ fontSize: '10px', color: '#8f8' }}>
-        + {pros}
-      </div>
-      <div style={{ fontSize: '10px', color: '#f88' }}>
-        - {cons}
       </div>
     </div>
   );
@@ -153,7 +101,9 @@ export function HUD() {
           The Ark
         </div>
         {!ark.position ? (
-          <ArkPlacementHint playerPosition={player.position} />
+          <div style={{ fontSize: '12px', color: '#ffdd00' }}>
+            Press [B] to open Build Menu
+          </div>
         ) : (
           <>
             <ProgressBar
@@ -162,17 +112,11 @@ export function HUD() {
               color="#2ecc71"
               label="Construction"
             />
-            <ProgressBar
-              value={ark.pitchCoated}
-              max={ark.sectionsBuilt || 1}
-              color="#1a1a1a"
-              label="Pitch Coated"
-            />
             <div style={{ fontSize: '12px', marginTop: '4px' }}>
               Animals: {ark.animalsBoarded}/{ark.totalAnimals}
             </div>
-            <div style={{ fontSize: '11px', color: '#aaa', marginTop: '4px' }}>
-              [B] Build (10 wood) | [P] Pitch (5)
+            <div style={{ fontSize: '11px', color: '#ffdd00', marginTop: '4px' }}>
+              [B] Build Menu
             </div>
           </>
         )}
@@ -231,7 +175,7 @@ export function HUD() {
         fontSize: '11px',
         color: '#aaa',
       }}>
-        WASD: Move | Shift: Sprint | Scroll: Zoom | RMB: Rotate | B: {ark.position ? 'Build' : 'Place Ark'} | ESC: Pause
+        WASD: Move | Shift: Sprint | Scroll: Zoom | RMB: Rotate | B: Build Menu | ESC: Pause
       </div>
     </div>
   );
