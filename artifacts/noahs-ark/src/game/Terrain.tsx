@@ -67,14 +67,24 @@ export function Terrain() {
   );
 }
 
+// Expose for testing in development
+if (typeof window !== 'undefined') {
+  (window as any).__getTerrainHeight__ = getTerrainHeight;
+  (window as any).__noise2D__ = noise2D;
+}
+
 export function getTerrainHeight(x: number, z: number): number {
-  const dist = Math.sqrt(x * x + z * z);
+  // The terrain mesh is a PlaneGeometry rotated -π/2 around X, so
+  // planeY maps to -worldZ. Negate z to sample noise at the same
+  // coordinates the mesh used when generating vertex heights.
+  const nz = -z;
+  const dist = Math.sqrt(x * x + nz * nz);
   const valleyFactor = Math.min(1, dist / 60);
 
   let height = 0;
-  height += noise2D(x * 0.02, z * 0.02) * TERRAIN_HEIGHT;
-  height += noise2D(x * 0.05, z * 0.05) * 4;
-  height += noise2D(x * 0.1, z * 0.1) * 1.5;
+  height += noise2D(x * 0.02, nz * 0.02) * TERRAIN_HEIGHT;
+  height += noise2D(x * 0.05, nz * 0.05) * 4;
+  height += noise2D(x * 0.1, nz * 0.1) * 1.5;
   height *= valleyFactor;
 
   const centerPlateau = Math.max(0, 1 - dist / 15) * 3;

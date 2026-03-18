@@ -58,7 +58,9 @@ export function Player() {
 
     const controls = getState();
     const pos = groupRef.current.position;
-    const terrainY = getTerrainHeight(pos.x, pos.z);
+
+    // Sample terrain at current position for speed/swimming check
+    let terrainY = getTerrainHeight(pos.x, pos.z);
     const isSwimming = terrainY < waterLevel - 0.5;
     const isSprinting = controls.sprint && stamina > 0 && !isSwimming;
 
@@ -85,8 +87,12 @@ export function Player() {
     pos.x = resolvedX;
     pos.z = resolvedZ;
 
+    // Re-sample terrain at the new position so Y tracks correctly
+    terrainY = getTerrainHeight(pos.x, pos.z);
     const targetY = Math.max(terrainY, waterLevel - 0.3) + 1;
-    pos.y += (targetY - pos.y) * 0.1;
+    // Frame-rate-independent smoothing: faster catch-up (rate ~10/s)
+    const smoothing = 1 - Math.exp(-10 * delta);
+    pos.y += (targetY - pos.y) * smoothing;
 
     const boundary = 90;
     pos.x = Math.max(-boundary, Math.min(boundary, pos.x));
@@ -102,6 +108,18 @@ export function Player() {
     } else {
       updateStamina(STAMINA_REGEN * delta);
     }
+
+    // Expose diagnostic data for testing
+    const currentTerrainY = getTerrainHeight(pos.x, pos.z);
+    (window as any).__PLAYER_DEBUG__ = {
+      x: pos.x,
+      y: pos.y,
+      z: pos.z,
+      terrainY: currentTerrainY,
+      targetY: Math.max(currentTerrainY, waterLevel - 0.3) + 1,
+      waterLevel,
+      delta: pos.y - (currentTerrainY + 1),
+    };
 
     setPlayerPosition([pos.x, pos.y, pos.z]);
   });
