@@ -208,6 +208,7 @@ interface GameStore {
 
   // Resource nodes
   gatherResource: (nodeId: number, playerId?: string) => boolean;
+  clearStaleLocks: () => void;
 
   // Animals
   updateAnimalPosition: (animalId: number, pos: [number, number, number]) => void;
@@ -540,6 +541,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().addResource(node.type, 1, id);
     get().updateFaith(1, id);
     return true;
+  },
+
+  clearStaleLocks: () => {
+    const now = Date.now();
+    set((state) => {
+      let changed = false;
+      const newNodes = state.resourceNodes.map((n) => {
+        if (n.lockedBy && n.lockedUntil <= now) {
+          changed = true;
+          return { ...n, lockedBy: null, lockedUntil: 0 };
+        }
+        return n;
+      });
+      return changed ? { resourceNodes: newNodes } : {};
+    });
   },
 
   // --- Animals ---

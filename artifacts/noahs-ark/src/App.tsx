@@ -10,6 +10,7 @@ import { Tutorial } from './ui/Tutorial';
 import { Minimap } from './ui/Minimap';
 import { Scoreboard } from './ui/Scoreboard';
 import { DivineIntervention } from './ui/DivineIntervention';
+import { RivalNotifications } from './ui/RivalNotifications';
 
 function App() {
   const gameState = useGameStore((s) => s.gameState);
@@ -42,6 +43,7 @@ function App() {
       {(gameState === 'gameover' || gameState === 'victory') && <GameOverScreen />}
       {scoreboardOpen && <Scoreboard />}
       {showDivineIntervention && <DivineIntervention />}
+      <RivalNotifications />
     </div>
   );
 }

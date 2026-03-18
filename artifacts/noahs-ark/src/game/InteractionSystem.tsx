@@ -12,6 +12,7 @@ export function InteractionSystem() {
   const toggleScoreboard = useGameStore((s) => s.toggleScoreboard);
   const setShowDivineIntervention = useGameStore((s) => s.setShowDivineIntervention);
   const clearExpiredEffects = useGameStore((s) => s.clearExpiredEffects);
+  const clearStaleLocks = useGameStore((s) => s.clearStaleLocks);
 
   // Victory/defeat checks — poll every 500ms
   useEffect(() => {
@@ -101,6 +102,16 @@ export function InteractionSystem() {
     }, 1000);
     return () => clearInterval(interval);
   }, [gameState, clearExpiredEffects]);
+
+  // Clear stale resource node locks every 2 seconds
+  useEffect(() => {
+    if (gameState !== "playing") return;
+
+    const interval = setInterval(() => {
+      clearStaleLocks();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [gameState, clearStaleLocks]);
 
   // Day cycle — 1 day every 60 seconds
   useEffect(() => {

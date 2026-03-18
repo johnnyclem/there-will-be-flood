@@ -12,6 +12,8 @@ export function GameOverScreen() {
   const localPlayerId = useGameStore((s) => s.localPlayerId);
   const scores = useGameStore((s) => s.scores);
   const players = useGameStore((s) => s.players);
+  const arks = useGameStore((s) => s.arks);
+  const animalStates = useGameStore((s) => s.animalStates);
 
   const isVictory = gameState === 'victory';
   const isVersus = matchConfig.mode === 'versus';
@@ -87,31 +89,107 @@ export function GameOverScreen() {
 
       <div style={{
         background: 'rgba(0,0,0,0.5)',
-        padding: '20px 30px',
+        padding: '24px 30px',
         borderRadius: '10px',
         marginBottom: '40px',
-        minWidth: '280px',
+        minWidth: '340px',
         border: '1px solid rgba(255,255,255,0.1)',
       }}>
-        <div style={{ fontSize: '14px', lineHeight: '2' }}>
-          <div>Your Score: <span style={{ color: '#f1c40f', fontWeight: 'bold' }}>{score}</span></div>
-          <div>Days Survived: {world.dayNumber}</div>
+        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#e8d5a3', marginBottom: '12px' }}>
+          Score Breakdown
+        </div>
+        <div style={{ fontSize: '13px', lineHeight: '2' }}>
           {ark && (
             <>
-              <div>Ark Progress: {Math.round((ark.sectionsBuilt / ark.totalSections) * 100)}%</div>
-              <div>Animals Saved: {ark.animalsBoarded}/{ark.totalAnimals}</div>
+              {ark.position && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Ark Placement</span>
+                  <span style={{ color: '#2ecc71' }}>+50</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Sections Built ({ark.sectionsBuilt}/{ark.totalSections})</span>
+                <span style={{ color: '#2ecc71' }}>+{ark.sectionsBuilt * 100}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Pitch Coating ({ark.pitchCoated})</span>
+                <span style={{ color: '#2ecc71' }}>+{ark.pitchCoated * 50}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Animals Boarded ({ark.animalsBoarded}/{ark.totalAnimals})</span>
+                <span style={{ color: '#2ecc71' }}>+{ark.animalsBoarded * 200}</span>
+              </div>
             </>
           )}
+          <div style={{
+            borderTop: '1px solid rgba(255,255,255,0.15)',
+            marginTop: '6px',
+            paddingTop: '6px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontWeight: 'bold',
+            fontSize: '15px',
+          }}>
+            <span>Total Score</span>
+            <span style={{ color: '#f1c40f' }}>{score}</span>
+          </div>
         </div>
 
-        {isVersus && rivalEntries.length > 0 && (
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          marginTop: '12px',
+          paddingTop: '10px',
+          fontSize: '13px',
+          color: '#aaa',
+        }}>
+          <div>Days Survived: {world.dayNumber}</div>
+          <div>Time: ~{Math.round(world.dayNumber * 60 / 60)}m {world.dayNumber * 60 % 60}s</div>
+          <div>Final Water Level: {world.waterLevel.toFixed(1)}</div>
+        </div>
+
+        {isVersus && (
           <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
-            <div style={{ fontSize: '13px', color: '#aaa', marginBottom: '6px' }}>Rival Scores</div>
-            {rivalEntries.map(({ id, score: rivalScore, name }) => (
-              <div key={id} style={{ fontSize: '13px', color: id === winnerId ? '#f1c40f' : '#888' }}>
-                {name}: {rivalScore} {id === winnerId ? '(Winner)' : ''}
-              </div>
-            ))}
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#e8d5a3', marginBottom: '8px' }}>Rival Comparison</div>
+            {rivalEntries.map(({ id, score: rivalScore, name }) => {
+              const rivalArk = arks[id];
+              const rivalSpecies = animalStates
+                .filter((a) => a.boardedByPlayerId === id)
+                .map((a) => a.species);
+              return (
+                <div key={id} style={{ fontSize: '12px', marginBottom: '8px' }}>
+                  <div style={{ color: id === winnerId ? '#f1c40f' : '#aaa', fontWeight: 'bold', marginBottom: '4px' }}>
+                    {name}: {rivalScore} pts {id === winnerId ? '(Winner)' : ''}
+                  </div>
+                  {rivalArk && (
+                    <div style={{ color: '#777', paddingLeft: '10px' }}>
+                      <div>Sections: {rivalArk.sectionsBuilt}/{rivalArk.totalSections} | Animals: {rivalArk.animalsBoarded}/{rivalArk.totalAnimals}</div>
+                      {rivalSpecies.length > 0 && (
+                        <div>Species: {rivalSpecies.join(', ')}</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {(() => {
+              const localSpecies = animalStates
+                .filter((a) => a.boardedByPlayerId === localPlayerId)
+                .map((a) => a.species);
+              const rivalSpeciesAll = rivalEntries.flatMap(({ id }) =>
+                animalStates.filter((a) => a.boardedByPlayerId === id).map((a) => a.species),
+              );
+              const uniqueToLocal = localSpecies.filter((s) => !rivalSpeciesAll.includes(s));
+              const shared = localSpecies.filter((s) => rivalSpeciesAll.includes(s));
+              return localSpecies.length > 0 ? (
+                <div style={{ fontSize: '12px', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px' }}>
+                  <div style={{ color: '#aaa', fontWeight: 'bold', marginBottom: '4px' }}>Your Species</div>
+                  <div style={{ color: '#777', paddingLeft: '10px' }}>
+                    {uniqueToLocal.length > 0 && <div style={{ color: '#2ecc71' }}>Exclusive: {uniqueToLocal.join(', ')}</div>}
+                    {shared.length > 0 && <div>Shared: {shared.join(', ')}</div>}
+                  </div>
+                </div>
+              ) : null;
+            })()}
           </div>
         )}
       </div>

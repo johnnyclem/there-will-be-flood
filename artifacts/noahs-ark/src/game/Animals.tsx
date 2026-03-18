@@ -8,7 +8,7 @@ import {
   type AnimalState,
 } from '../store/gameStore';
 import { getTerrainHeight } from './Terrain';
-import { Html } from '@react-three/drei';
+import { Html, Line } from '@react-three/drei';
 
 const FOLLOW_SPEED = 5.6; // 70% of walk speed (8)
 const FOLLOW_RANGE_SQ = 25; // 5^2 — proximity to start following
@@ -156,10 +156,58 @@ function AnimalModel({ species, color, size }: { species: string; color: string;
   );
 }
 
+function TetherLine({ animalGroupRef, followingPlayerId, color, animalHeight }: {
+  animalGroupRef: React.RefObject<THREE.Group | null>;
+  followingPlayerId: string;
+  color: string;
+  animalHeight: number;
+}) {
+  const lineRef = useRef<any>(null);
+
+  useFrame(() => {
+    if (!lineRef.current || !animalGroupRef.current) return;
+    const state = useGameStore.getState();
+    const follower = state.players[followingPlayerId];
+    if (!follower) return;
+
+    const animalPos = animalGroupRef.current.position;
+    // Line points: from animal (local origin offset up) to player (world offset from animal)
+    const points = [
+      new THREE.Vector3(0, animalHeight * 0.3, 0),
+      new THREE.Vector3(
+        follower.position[0] - animalPos.x,
+        follower.position[1] - animalPos.y + 0.5,
+        follower.position[2] - animalPos.z,
+      ),
+    ];
+    lineRef.current.geometry.setPositions(
+      points.flatMap((p) => [p.x, p.y, p.z]),
+    );
+  });
+
+  return (
+    <Line
+      ref={lineRef}
+      points={[
+        [0, animalHeight * 0.3, 0],
+        [0, animalHeight * 0.3, 0],
+      ]}
+      color={color}
+      lineWidth={2}
+      transparent
+      opacity={0.6}
+      dashed
+      dashSize={0.3}
+      gapSize={0.15}
+    />
+  );
+}
+
 function Animal({ data }: { data: AnimalState }) {
   const groupRef = useRef<THREE.Group>(null);
   const targetRef = useRef(new THREE.Vector3(...data.startPosition));
   const timerRef = useRef(Math.random() * 5);
+  const lastSyncedPos = useRef<[number, number, number]>([...data.startPosition]);
   const gameState = useGameStore((s) => s.gameState);
   const updateAnimalPosition = useGameStore((s) => s.updateAnimalPosition);
   const setAnimalFollowing = useGameStore((s) => s.setAnimalFollowing);
@@ -263,8 +311,15 @@ function Animal({ data }: { data: AnimalState }) {
     const ty = Math.max(currentTerrainY, waterLevel) + data.size[1] / 2;
     pos.y += (ty - pos.y) * 0.1;
 
-    // Update position in store (throttled: only when moved significantly)
-    updateAnimalPosition(data.id, [pos.x, pos.y, pos.z]);
+    // Update position in store only when moved > 0.5 units
+    const lsp = lastSyncedPos.current;
+    const sdx = pos.x - lsp[0];
+    const sdy = pos.y - lsp[1];
+    const sdz = pos.z - lsp[2];
+    if (sdx * sdx + sdy * sdy + sdz * sdz > 0.25) {
+      lastSyncedPos.current = [pos.x, pos.y, pos.z];
+      updateAnimalPosition(data.id, [pos.x, pos.y, pos.z]);
+    }
 
     // Submersion check
     const submerged = currentTerrainY < waterLevel - 0.5;
@@ -303,11 +358,13 @@ function Animal({ data }: { data: AnimalState }) {
       <AnimalModel species={data.species} color={data.color} size={data.size} />
 
       {/* Tether line when following a player */}
-      {isFollowing && followerColor && (
-        <mesh position={[0, data.size[1] * 0.3, 0]}>
-          <sphereGeometry args={[0.08, 4, 4]} />
-          <meshStandardMaterial color={followerColor} emissive={followerColor} emissiveIntensity={0.5} />
-        </mesh>
+      {isFollowing && followerColor && data.followingPlayerId && (
+        <TetherLine
+          animalGroupRef={groupRef}
+          followingPlayerId={data.followingPlayerId}
+          color={followerColor}
+          animalHeight={data.size[1]}
+        />
       )}
 
       {isNearLocalPlayer && (
