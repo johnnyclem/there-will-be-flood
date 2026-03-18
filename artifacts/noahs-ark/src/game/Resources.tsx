@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState, useCallback } from 'react';
+import { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
@@ -25,22 +25,27 @@ function mulberry32(seed: number) {
   };
 }
 
+const GATHER_RANGE_SQ = 16; // 4^2
+
 function ResourceNodeMesh({ node, onGather }: { node: ResourceNode; onGather: () => void }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
-  const playerPos = useGameStore((s) => s.player.position);
   const gameState = useGameStore((s) => s.gameState);
+  const [isNearby, setIsNearby] = useState(false);
+
   const waterLevel = useGameStore((s) => s.world.waterLevel);
-
   const isSubmerged = node.position[1] < waterLevel - 0.5;
-  const distance = Math.sqrt(
-    (playerPos[0] - node.position[0]) ** 2 +
-    (playerPos[2] - node.position[2]) ** 2
-  );
-  const isNearby = distance < 4;
 
+  // Check distance in useFrame to avoid re-renders from playerPos subscription
   useFrame(() => {
     if (!meshRef.current || gameState !== 'playing') return;
+
+    const { player } = useGameStore.getState();
+    const dx = player.position[0] - node.position[0];
+    const dz = player.position[2] - node.position[2];
+    const nearby = dx * dx + dz * dz < GATHER_RANGE_SQ;
+    setIsNearby((prev) => (prev !== nearby ? nearby : prev));
+
     if (hovered && node.amount > 0) {
       meshRef.current.scale.setScalar(1.1 + Math.sin(Date.now() * 0.005) * 0.05);
     } else {
@@ -111,7 +116,8 @@ export function Resources() {
     const rng = mulberry32(54321);
     let id = 0;
 
-    for (let i = 0; i < 40; i++) {
+    // Wood: 50 nodes (increased from 40) with more per node
+    for (let i = 0; i < 50; i++) {
       const x = (rng() - 0.5) * 140;
       const z = (rng() - 0.5) * 140;
       const y = getTerrainHeight(x, z);
@@ -120,8 +126,8 @@ export function Resources() {
         id: id++,
         position: [x, y + 0.7, z],
         type: 'wood',
-        amount: 3 + Math.floor(rng() * 5),
-        maxAmount: 8,
+        amount: 5 + Math.floor(rng() * 6),
+        maxAmount: 10,
         respawnTime: 0,
       });
     }
@@ -184,6 +190,42 @@ export function Resources() {
       })
     );
   }, [addResource, updateFaith]);
+
+  // E key handler: gather from nearest resource within range
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'e' && e.key !== 'E') return;
+      const { gameState, player } = useGameStore.getState();
+      if (gameState !== 'playing') return;
+
+      let nearestId = -1;
+      let nearestDist = GATHER_RANGE_SQ;
+
+      for (const node of nodesRef.current) {
+        if (node.amount <= 0) continue;
+        const waterLevel = useGameStore.getState().world.waterLevel;
+        if (node.position[1] < waterLevel - 0.5) continue;
+
+        const dx = player.position[0] - node.position[0];
+        const dz = player.position[2] - node.position[2];
+        const distSq = dx * dx + dz * dz;
+        if (distSq < nearestDist) {
+          nearestDist = distSq;
+          nearestId = node.id;
+        }
+      }
+
+      if (nearestId >= 0) {
+        handleGather(nearestId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleGather]);
 
   return (
     <group>

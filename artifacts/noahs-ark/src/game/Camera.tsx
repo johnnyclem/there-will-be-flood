@@ -9,6 +9,10 @@ const MIN_TILT = 0.3;
 const MAX_TILT = 1.2;
 const CAMERA_SMOOTHING = 0.05;
 
+// Reusable vectors to avoid GC pressure
+const _target = new THREE.Vector3();
+const _cameraPos = new THREE.Vector3();
+
 export function GameCamera() {
   const { camera } = useThree();
   const targetRef = useRef(new THREE.Vector3());
@@ -18,7 +22,6 @@ export function GameCamera() {
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
 
-  const playerPos = useGameStore((s) => s.player.position);
   const gameState = useGameStore((s) => s.gameState);
 
   useEffect(() => {
@@ -74,20 +77,21 @@ export function GameCamera() {
   useFrame(() => {
     if (gameState !== 'playing') return;
 
-    const target = new THREE.Vector3(playerPos[0], playerPos[1], playerPos[2]);
-    targetRef.current.lerp(target, CAMERA_SMOOTHING);
+    const playerPos = useGameStore.getState().player.position;
+    _target.set(playerPos[0], playerPos[1], playerPos[2]);
+    targetRef.current.lerp(_target, CAMERA_SMOOTHING);
 
     const offsetX = Math.sin(rotation) * Math.cos(tilt) * distance;
     const offsetY = Math.sin(tilt) * distance;
     const offsetZ = Math.cos(rotation) * Math.cos(tilt) * distance;
 
-    const cameraPos = new THREE.Vector3(
+    _cameraPos.set(
       targetRef.current.x + offsetX,
       targetRef.current.y + offsetY,
       targetRef.current.z + offsetZ
     );
 
-    camera.position.lerp(cameraPos, 0.08);
+    camera.position.lerp(_cameraPos, 0.08);
     camera.lookAt(targetRef.current);
   });
 

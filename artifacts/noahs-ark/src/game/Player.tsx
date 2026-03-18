@@ -4,6 +4,7 @@ import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
 import { getTerrainHeight } from './Terrain';
+import { resolveCollisions } from './colliders';
 
 export enum Controls {
   forward = 'forward',
@@ -23,6 +24,10 @@ const SPRINT_SPEED = 14;
 const SWIM_SPEED = 4;
 const STAMINA_DRAIN = 15;
 const STAMINA_REGEN = 10;
+
+// Reusable vectors to avoid GC pressure
+const _direction = new THREE.Vector3();
+const _zero = new THREE.Vector3(0, 0, 0);
 
 export function Player() {
   const groupRef = useRef<THREE.Group>(null);
@@ -58,22 +63,27 @@ export function Player() {
     const isSprinting = controls.sprint && stamina > 0 && !isSwimming;
 
     let speed = isSwimming ? SWIM_SPEED : isSprinting ? SPRINT_SPEED : WALK_SPEED;
-    const direction = new THREE.Vector3();
+    _direction.set(0, 0, 0);
 
-    if (controls.forward) direction.z -= 1;
-    if (controls.back) direction.z += 1;
-    if (controls.left) direction.x -= 1;
-    if (controls.right) direction.x += 1;
+    if (controls.forward) _direction.z -= 1;
+    if (controls.back) _direction.z += 1;
+    if (controls.left) _direction.x -= 1;
+    if (controls.right) _direction.x += 1;
 
-    if (direction.length() > 0) {
-      direction.normalize();
-      velocityRef.current.lerp(direction.multiplyScalar(speed), 0.15);
+    if (_direction.length() > 0) {
+      _direction.normalize();
+      velocityRef.current.lerp(_direction.multiplyScalar(speed), 0.15);
     } else {
-      velocityRef.current.lerp(new THREE.Vector3(0, 0, 0), 0.2);
+      velocityRef.current.lerp(_zero, 0.2);
     }
 
     pos.x += velocityRef.current.x * delta;
     pos.z += velocityRef.current.z * delta;
+
+    // Resolve collisions with trees, rocks, and the ark
+    const [resolvedX, resolvedZ] = resolveCollisions(pos.x, pos.z);
+    pos.x = resolvedX;
+    pos.z = resolvedZ;
 
     const targetY = Math.max(terrainY, waterLevel - 0.3) + 1;
     pos.y += (targetY - pos.y) * 0.1;
@@ -87,7 +97,7 @@ export function Player() {
       groupRef.current.rotation.y = angle;
     }
 
-    if (isSprinting && direction.length() > 0) {
+    if (isSprinting && _direction.length() > 0) {
       updateStamina(-STAMINA_DRAIN * delta);
     } else {
       updateStamina(STAMINA_REGEN * delta);

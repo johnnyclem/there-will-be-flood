@@ -28,6 +28,7 @@ export interface ArkState {
   pitchCoated: number;
   animalsBoarded: number;
   totalAnimals: number;
+  boardedAnimalIds: number[];
   buoyancy: number;
   integrity: number;
 }
@@ -47,6 +48,7 @@ interface GameStore {
   ark: ArkState;
   world: WorldState;
   score: number;
+  resetCounter: number;
   setGameState: (state: GameState) => void;
   startGame: () => void;
   pauseGame: () => void;
@@ -61,7 +63,7 @@ interface GameStore {
   updateFaith: (amount: number) => void;
   buildArkSection: () => void;
   coatWithPitch: () => void;
-  boardAnimal: () => void;
+  boardAnimal: (animalId: number) => void;
   setPlayerPosition: (pos: [number, number, number]) => void;
   switchTool: (tool: 'axe' | 'hammer' | 'staff') => void;
   incrementDay: () => void;
@@ -91,6 +93,7 @@ const initialArk: ArkState = {
   pitchCoated: 0,
   animalsBoarded: 0,
   totalAnimals: 14,
+  boardedAnimalIds: [],
   buoyancy: 0,
   integrity: 100,
 };
@@ -110,16 +113,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ark: { ...initialArk },
   world: { ...initialWorld },
   score: 0,
+  resetCounter: 0,
 
   setGameState: (state) => set({ gameState: state }),
 
-  startGame: () => set({
+  startGame: () => set((state) => ({
     gameState: 'playing',
     player: { ...initialPlayer },
     ark: { ...initialArk },
     world: { ...initialWorld },
     score: 0,
-  }),
+    resetCounter: state.resetCounter + 1,
+  })),
 
   pauseGame: () => set({ gameState: 'paused' }),
   resumeGame: () => set({ gameState: 'playing' }),
@@ -216,14 +221,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  boardAnimal: () => {
+  boardAnimal: (animalId: number) => {
     const state = get();
-    if (state.ark.animalsBoarded < state.ark.totalAnimals) {
-      set({
-        ark: { ...state.ark, animalsBoarded: state.ark.animalsBoarded + 1 },
-        score: state.score + 200,
-      });
-    }
+    if (state.ark.boardedAnimalIds.includes(animalId)) return;
+    if (state.ark.animalsBoarded >= state.ark.totalAnimals) return;
+    set({
+      ark: {
+        ...state.ark,
+        animalsBoarded: state.ark.animalsBoarded + 1,
+        boardedAnimalIds: [...state.ark.boardedAnimalIds, animalId],
+      },
+      score: state.score + 200,
+    });
   },
 
   setPlayerPosition: (pos) => set((state) => ({
