@@ -31,6 +31,7 @@ export interface ArkState {
   boardedAnimalIds: number[];
   buoyancy: number;
   integrity: number;
+  position: [number, number, number] | null; // null = not yet placed
 }
 
 export interface WorldState {
@@ -64,6 +65,7 @@ interface GameStore {
   buildArkSection: () => void;
   coatWithPitch: () => void;
   boardAnimal: (animalId: number) => void;
+  placeArk: (pos: [number, number, number]) => void;
   setPlayerPosition: (pos: [number, number, number]) => void;
   switchTool: (tool: 'axe' | 'hammer' | 'staff') => void;
   incrementDay: () => void;
@@ -96,6 +98,7 @@ const initialArk: ArkState = {
   boardedAnimalIds: [],
   buoyancy: 0,
   integrity: 100,
+  position: null,
 };
 
 const initialWorld: WorldState = {
@@ -189,8 +192,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     },
   })),
 
+  placeArk: (pos) => {
+    const state = get();
+    if (state.ark.position !== null) return; // already placed
+    set({
+      ark: { ...state.ark, position: pos },
+      score: state.score + 50,
+    });
+  },
+
   buildArkSection: () => {
     const state = get();
+    if (!state.ark.position) return; // must place first
     if (state.player.inventory.wood >= 10 && state.ark.sectionsBuilt < state.ark.totalSections) {
       set({
         player: {

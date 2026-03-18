@@ -1,4 +1,5 @@
 import { getTerrainHeight } from './Terrain';
+import { useGameStore } from '../store/gameStore';
 
 export interface CircleCollider {
   x: number;
@@ -87,8 +88,7 @@ function generateRockColliders(): CircleCollider[] {
   return colliders;
 }
 
-// Ark collider
-const ARK_POSITION = { x: 15, z: -10 };
+// Ark collider dimensions
 const ARK_HALF_WIDTH = 9;  // ARK_LENGTH / 2
 const ARK_HALF_DEPTH = 2.5; // ARK_WIDTH / 2
 
@@ -121,25 +121,27 @@ export function resolveCollisions(px: number, pz: number, playerRadius: number =
     }
   }
 
-  // Check ark box collider (AABB)
-  const arkMinX = ARK_POSITION.x - ARK_HALF_WIDTH - playerRadius;
-  const arkMaxX = ARK_POSITION.x + ARK_HALF_WIDTH + playerRadius;
-  const arkMinZ = ARK_POSITION.z - ARK_HALF_DEPTH - playerRadius;
-  const arkMaxZ = ARK_POSITION.z + ARK_HALF_DEPTH + playerRadius;
+  // Check ark box collider (AABB) — only if placed
+  const arkPos = useGameStore.getState().ark.position;
+  if (arkPos) {
+    const arkMinX = arkPos[0] - ARK_HALF_WIDTH - playerRadius;
+    const arkMaxX = arkPos[0] + ARK_HALF_WIDTH + playerRadius;
+    const arkMinZ = arkPos[2] - ARK_HALF_DEPTH - playerRadius;
+    const arkMaxZ = arkPos[2] + ARK_HALF_DEPTH + playerRadius;
 
-  if (x > arkMinX && x < arkMaxX && z > arkMinZ && z < arkMaxZ) {
-    // Find the smallest penetration axis and push out along it
-    const overlapLeft = x - arkMinX;
-    const overlapRight = arkMaxX - x;
-    const overlapBack = z - arkMinZ;
-    const overlapFront = arkMaxZ - z;
+    if (x > arkMinX && x < arkMaxX && z > arkMinZ && z < arkMaxZ) {
+      const overlapLeft = x - arkMinX;
+      const overlapRight = arkMaxX - x;
+      const overlapBack = z - arkMinZ;
+      const overlapFront = arkMaxZ - z;
 
-    const minOverlap = Math.min(overlapLeft, overlapRight, overlapBack, overlapFront);
+      const minOverlap = Math.min(overlapLeft, overlapRight, overlapBack, overlapFront);
 
-    if (minOverlap === overlapLeft) x = arkMinX;
-    else if (minOverlap === overlapRight) x = arkMaxX;
-    else if (minOverlap === overlapBack) z = arkMinZ;
-    else z = arkMaxZ;
+      if (minOverlap === overlapLeft) x = arkMinX;
+      else if (minOverlap === overlapRight) x = arkMaxX;
+      else if (minOverlap === overlapBack) z = arkMinZ;
+      else z = arkMaxZ;
+    }
   }
 
   return [x, z];

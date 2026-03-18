@@ -37,7 +37,6 @@ const SPECIES = [
   { name: 'Bear', color: '#4A3728', size: [0.9, 0.7, 1.1] as [number, number, number] },
 ];
 
-const ARK_POSITION = [15, 0, -10];
 const BOARD_RANGE_SQ = 25; // 5^2 — must be near ark too
 const ARK_RANGE_SQ = 225; // 15^2
 
@@ -201,10 +200,11 @@ export function Animals() {
       if (e.key !== 'f' && e.key !== 'F') return;
       const { gameState, player, ark } = useGameStore.getState();
       if (gameState !== 'playing') return;
+      if (!ark.position) return; // ark not placed yet
 
       // Check player is near the ark
-      const adx = player.position[0] - ARK_POSITION[0];
-      const adz = player.position[2] - ARK_POSITION[2];
+      const adx = player.position[0] - ark.position[0];
+      const adz = player.position[2] - ark.position[2];
       if (adx * adx + adz * adz > ARK_RANGE_SQ) return;
 
       // Find nearest non-boarded animal within range

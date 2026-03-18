@@ -4,7 +4,6 @@ import * as THREE from 'three';
 import { useGameStore } from '../store/gameStore';
 import { getTerrainHeight } from './Terrain';
 
-const ARK_POSITION: [number, number, number] = [15, 0, -10];
 const ARK_LENGTH = 18;
 const ARK_WIDTH = 5;
 const ARK_HEIGHT = 4;
@@ -15,9 +14,14 @@ export function Ark() {
   const totalSections = useGameStore((s) => s.ark.totalSections);
   const waterLevel = useGameStore((s) => s.world.waterLevel);
   const pitchCoated = useGameStore((s) => s.ark.pitchCoated);
+  const arkPosition = useGameStore((s) => s.ark.position);
 
   const buildProgress = sectionsBuilt / totalSections;
-  const terrainY = getTerrainHeight(ARK_POSITION[0], ARK_POSITION[2]);
+
+  // Don't render if ark hasn't been placed yet
+  if (!arkPosition) return null;
+
+  const terrainY = getTerrainHeight(arkPosition[0], arkPosition[2]);
 
   const sections = useMemo(() => {
     const result: { offset: number; index: number }[] = [];
@@ -31,6 +35,41 @@ export function Ark() {
     return result;
   }, [totalSections]);
 
+  return (
+    <group position={[arkPosition[0], terrainY, arkPosition[2]]}>
+      <ArkInner
+        groupRef={groupRef}
+        terrainY={terrainY}
+        waterLevel={waterLevel}
+        buildProgress={buildProgress}
+        sectionsBuilt={sectionsBuilt}
+        pitchCoated={pitchCoated}
+        sections={sections}
+        totalSections={totalSections}
+      />
+    </group>
+  );
+}
+
+function ArkInner({
+  groupRef,
+  terrainY,
+  waterLevel,
+  buildProgress,
+  sectionsBuilt,
+  pitchCoated,
+  sections,
+  totalSections,
+}: {
+  groupRef: React.RefObject<THREE.Group | null>;
+  terrainY: number;
+  waterLevel: number;
+  buildProgress: number;
+  sectionsBuilt: number;
+  pitchCoated: number;
+  sections: { offset: number; index: number }[];
+  totalSections: number;
+}) {
   useFrame((state) => {
     if (!groupRef.current) return;
 
@@ -47,8 +86,10 @@ export function Ark() {
     }
   });
 
+  const sectionWidth = ARK_LENGTH / totalSections;
+
   return (
-    <group ref={groupRef} position={[ARK_POSITION[0], terrainY, ARK_POSITION[2]]}>
+    <group ref={groupRef}>
       <mesh receiveShadow castShadow position={[0, ARK_HEIGHT * 0.3 * buildProgress / 2, 0]}>
         <boxGeometry args={[ARK_LENGTH * Math.min(1, buildProgress * 1.5), ARK_HEIGHT * 0.3 * buildProgress, ARK_WIDTH]} />
         <meshStandardMaterial color="#4a3520" roughness={0.9} />
@@ -57,7 +98,6 @@ export function Ark() {
       {sections.map((section) => {
         if (section.index >= sectionsBuilt) return null;
         const isCoated = section.index < pitchCoated;
-        const sectionWidth = ARK_LENGTH / totalSections;
 
         return (
           <group key={section.index} position={[section.offset, 0, 0]}>
