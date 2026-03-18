@@ -5,6 +5,7 @@ import { HUD } from './ui/HUD';
 import { PauseMenu } from './ui/PauseMenu';
 import { GameOverScreen } from './ui/GameOverScreen';
 import { BackgroundMusic } from './ui/BackgroundMusic';
+import { Tutorial } from './ui/Tutorial';
 
 function App() {
   const gameState = useGameStore((s) => s.gameState);
@@ -19,6 +20,7 @@ function App() {
       <GameScene key={resetCounter} />
       <BackgroundMusic />
       {(gameState === 'playing') && <HUD />}
+      {(gameState === 'playing' || gameState === 'paused') && <Tutorial key={resetCounter} />}
       {gameState === 'paused' && (
         <>
           <HUD />
