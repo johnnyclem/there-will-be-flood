@@ -23,6 +23,7 @@ export function GameCamera() {
   const lastMouse = useRef({ x: 0, y: 0 });
 
   const gameState = useGameStore((s) => s.gameState);
+  const setCameraRotation = useGameStore((s) => s.setCameraRotation);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -93,6 +94,8 @@ export function GameCamera() {
 
     camera.position.lerp(_cameraPos, 0.08);
     camera.lookAt(targetRef.current);
+
+    setCameraRotation(rotation);
   });
 
   return null;

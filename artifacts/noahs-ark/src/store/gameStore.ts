@@ -71,6 +71,8 @@ interface GameStore {
   setPlayerPosition: (pos: [number, number, number]) => void;
   switchTool: (tool: 'axe' | 'hammer' | 'staff') => void;
   incrementDay: () => void;
+  cameraRotation: number;
+  setCameraRotation: (r: number) => void;
 }
 
 const initialPlayer: PlayerState = {
@@ -120,6 +122,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   score: 0,
   resetCounter: 0,
   buildMenuOpen: false,
+  cameraRotation: 0,
 
   setGameState: (state) => set({ gameState: state }),
 
@@ -261,6 +264,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   switchTool: (tool) => set((state) => ({
     player: { ...state.player, tool },
   })),
+
+  setCameraRotation: (r) => set({ cameraRotation: r }),
 
   incrementDay: () => set((state) => ({
     world: {
