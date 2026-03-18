@@ -78,8 +78,8 @@ export function Player() {
       const camRot = useGameStore.getState().cameraRotation;
       const cos = Math.cos(camRot);
       const sin = Math.sin(camRot);
-      const rx = _direction.x * cos - _direction.z * sin;
-      const rz = _direction.x * sin + _direction.z * cos;
+      const rx = _direction.x * cos + _direction.z * sin;
+      const rz = -_direction.x * sin + _direction.z * cos;
       _direction.x = rx;
       _direction.z = rz;
       velocityRef.current.lerp(_direction.multiplyScalar(speed), 0.15);
