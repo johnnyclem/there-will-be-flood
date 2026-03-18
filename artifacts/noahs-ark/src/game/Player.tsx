@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, selectLocalPlayer } from '../store/gameStore';
 import { getTerrainHeight } from './Terrain';
 import { resolveCollisions } from './colliders';
 
@@ -40,7 +40,7 @@ export function Player() {
   const switchTool = useGameStore((s) => s.switchTool);
   const waterLevel = useGameStore((s) => s.world.waterLevel);
   const gameState = useGameStore((s) => s.gameState);
-  const stamina = useGameStore((s) => s.player.stamina);
+  const stamina = useGameStore((s) => selectLocalPlayer(s)?.stamina ?? 100);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

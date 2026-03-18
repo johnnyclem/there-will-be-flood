@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, selectLocalArk } from '../store/gameStore';
 import { getTerrainHeight } from './Terrain';
 
 const ARK_LENGTH = 18;
@@ -10,11 +10,11 @@ const ARK_HEIGHT = 4;
 
 export function Ark() {
   const groupRef = useRef<THREE.Group>(null);
-  const sectionsBuilt = useGameStore((s) => s.ark.sectionsBuilt);
-  const totalSections = useGameStore((s) => s.ark.totalSections);
+  const sectionsBuilt = useGameStore((s) => selectLocalArk(s)?.sectionsBuilt ?? 0);
+  const totalSections = useGameStore((s) => selectLocalArk(s)?.totalSections ?? 30);
   const waterLevel = useGameStore((s) => s.world.waterLevel);
-  const pitchCoated = useGameStore((s) => s.ark.pitchCoated);
-  const arkPosition = useGameStore((s) => s.ark.position);
+  const pitchCoated = useGameStore((s) => selectLocalArk(s)?.pitchCoated ?? 0);
+  const arkPosition = useGameStore((s) => selectLocalArk(s)?.position ?? null);
 
   const buildProgress = sectionsBuilt / totalSections;
 

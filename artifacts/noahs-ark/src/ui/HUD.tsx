@@ -1,4 +1,4 @@
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, selectLocalPlayer, selectLocalArk, selectLocalScore } from '../store/gameStore';
 
 function ProgressBar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
@@ -28,10 +28,16 @@ function ProgressBar({ value, max, color, label }: { value: number; max: number;
 }
 
 export function HUD() {
-  const player = useGameStore((s) => s.player);
-  const ark = useGameStore((s) => s.ark);
+  const player = useGameStore(selectLocalPlayer);
+  const ark = useGameStore(selectLocalArk);
   const world = useGameStore((s) => s.world);
-  const score = useGameStore((s) => s.score);
+  const score = useGameStore(selectLocalScore);
+  const matchMode = useGameStore((s) => s.matchConfig.mode);
+
+  if (!player || !ark) return null;
+
+  const isVersus = matchMode === 'versus';
+  const faithReady = isVersus && player.faith >= 100;
 
   return (
     <div style={{
@@ -58,6 +64,20 @@ export function HUD() {
         <ProgressBar value={player.health} max={player.maxHealth} color="#e74c3c" label="Health" />
         <ProgressBar value={player.stamina} max={player.maxStamina} color="#f39c12" label="Stamina" />
         <ProgressBar value={player.faith} max={player.maxFaith} color="#9b59b6" label="Faith" />
+        {faithReady && (
+          <div style={{
+            marginTop: '6px',
+            padding: '4px 8px',
+            background: 'rgba(155,89,182,0.3)',
+            borderRadius: '4px',
+            fontSize: '11px',
+            color: '#d7a8f0',
+            border: '1px solid rgba(155,89,182,0.5)',
+            textAlign: 'center',
+          }}>
+            Divine Power Ready! [Use Build Menu]
+          </div>
+        )}
       </div>
 
       <div style={{
@@ -75,11 +95,11 @@ export function HUD() {
           Inventory
         </div>
         <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
-          <div>🪵 Wood: {player.inventory.wood}</div>
-          <div>🛢️ Pitch: {player.inventory.pitch}</div>
-          <div>🍞 Food: {player.inventory.food}</div>
-          <div>🌳 Gopher Wood: {player.inventory.gopherWood}</div>
-          <div>✨ Artifacts: {player.inventory.holyArtifacts}</div>
+          <div>Wood: {player.inventory.wood}</div>
+          <div>Pitch: {player.inventory.pitch}</div>
+          <div>Food: {player.inventory.food}</div>
+          <div>Gopher Wood: {player.inventory.gopherWood}</div>
+          <div>Artifacts: {player.inventory.holyArtifacts}</div>
         </div>
         <div style={{ marginTop: '8px', fontSize: '11px', color: '#aaa', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '6px' }}>
           Tool: {player.tool.toUpperCase()} [1/2/3]
@@ -134,7 +154,7 @@ export function HUD() {
         border: '1px solid rgba(255,255,255,0.1)',
       }}>
         <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '6px', color: world.tideWarning ? '#e74c3c' : '#87CEEB' }}>
-          {world.tideWarning ? '⚠️ RISING TIDE' : '🌊 Tide Level'}
+          {world.tideWarning ? 'RISING TIDE' : 'Tide Level'}
         </div>
         <div style={{
           width: '100%',
@@ -176,6 +196,7 @@ export function HUD() {
         color: '#aaa',
       }}>
         WASD: Move | Shift: Sprint | Scroll: Zoom | RMB: Rotate | B: Build Menu | ESC: Pause
+        {isVersus && ' | Tab: Scoreboard'}
       </div>
     </div>
   );

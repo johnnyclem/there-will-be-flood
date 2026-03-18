@@ -121,8 +121,10 @@ export function resolveCollisions(px: number, pz: number, playerRadius: number =
     }
   }
 
-  // Check ark box collider (AABB) — only if placed
-  const arkPos = useGameStore.getState().ark.position;
+  // Check ark box colliders for ALL placed arks
+  const { arks } = useGameStore.getState();
+  for (const ark of Object.values(arks)) {
+    const arkPos = ark.position;
   if (arkPos) {
     const arkMinX = arkPos[0] - ARK_HALF_WIDTH - playerRadius;
     const arkMaxX = arkPos[0] + ARK_HALF_WIDTH + playerRadius;
@@ -142,6 +144,7 @@ export function resolveCollisions(px: number, pz: number, playerRadius: number =
       else if (minOverlap === overlapBack) z = arkMinZ;
       else z = arkMaxZ;
     }
+  }
   }
 
   return [x, z];

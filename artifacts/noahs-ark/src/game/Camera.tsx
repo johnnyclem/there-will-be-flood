@@ -78,7 +78,9 @@ export function GameCamera() {
   useFrame(() => {
     if (gameState !== 'playing') return;
 
-    const playerPos = useGameStore.getState().player.position;
+    const state = useGameStore.getState();
+    const localPlayer = state.players[state.localPlayerId];
+    const playerPos = localPlayer?.position ?? [0, 0, 0] as [number, number, number];
     _target.set(playerPos[0], playerPos[1], playerPos[2]);
     targetRef.current.lerp(_target, CAMERA_SMOOTHING);
 

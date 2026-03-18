@@ -1,4 +1,4 @@
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, selectLocalPlayer, selectLocalArk } from '../store/gameStore';
 import { getTerrainHeight } from '../game/Terrain';
 
 const SPECIES = ['Lion', 'Elephant', 'Dove', 'Horse', 'Sheep', 'Wolf', 'Bear'];
@@ -20,12 +20,25 @@ interface BuildPhase {
   woodCost: number;
 }
 
-const BUILD_PHASES: BuildPhase[] = [
-  { name: 'Foundation', description: 'Lay the keel and base deck', sectionStart: 0, sectionEnd: 8, woodCost: 80 },
-  { name: 'Hull Walls', description: 'Raise the side walls', sectionStart: 8, sectionEnd: 15, woodCost: 70 },
-  { name: 'Upper Deck', description: 'Build the second level', sectionStart: 15, sectionEnd: 24, woodCost: 90 },
-  { name: 'Roof & Cabin', description: 'Complete the shelter', sectionStart: 24, sectionEnd: 30, woodCost: 60 },
-];
+/** Compute build phases scaled to the ark's totalSections */
+function computeBuildPhases(totalSections: number): BuildPhase[] {
+  if (totalSections <= 20) {
+    // Versus mode: 20 sections
+    return [
+      { name: 'Foundation', description: 'Lay the keel and base deck', sectionStart: 0, sectionEnd: 5, woodCost: 50 },
+      { name: 'Hull Walls', description: 'Raise the side walls', sectionStart: 5, sectionEnd: 10, woodCost: 50 },
+      { name: 'Upper Deck', description: 'Build the second level', sectionStart: 10, sectionEnd: 16, woodCost: 60 },
+      { name: 'Roof & Cabin', description: 'Complete the shelter', sectionStart: 16, sectionEnd: 20, woodCost: 40 },
+    ];
+  }
+  // Solo mode: 30 sections
+  return [
+    { name: 'Foundation', description: 'Lay the keel and base deck', sectionStart: 0, sectionEnd: 8, woodCost: 80 },
+    { name: 'Hull Walls', description: 'Raise the side walls', sectionStart: 8, sectionEnd: 15, woodCost: 70 },
+    { name: 'Upper Deck', description: 'Build the second level', sectionStart: 15, sectionEnd: 24, woodCost: 90 },
+    { name: 'Roof & Cabin', description: 'Complete the shelter', sectionStart: 24, sectionEnd: 30, woodCost: 60 },
+  ];
+}
 
 function PhaseProgress({ phase, sectionsBuilt }: { phase: BuildPhase; sectionsBuilt: number }) {
   const phaseTotal = phase.sectionEnd - phase.sectionStart;
@@ -75,7 +88,6 @@ function PhaseProgress({ phase, sectionsBuilt }: { phase: BuildPhase; sectionsBu
 }
 
 function ArkVisual({ progress }: { progress: number }) {
-  // Simple ASCII-style visual of the ark at different build stages
   const baseColor = progress > 0 ? '#6B4226' : '#333';
   const wallColor = progress >= 0.27 ? '#6B4226' : '#333';
   const deckColor = progress >= 0.5 ? '#5C4033' : '#333';
@@ -120,13 +132,18 @@ function ArkVisual({ progress }: { progress: number }) {
 }
 
 export function BuildMenu() {
-  const player = useGameStore((s) => s.player);
-  const ark = useGameStore((s) => s.ark);
+  const player = useGameStore(selectLocalPlayer);
+  const ark = useGameStore(selectLocalArk);
   const toggleBuildMenu = useGameStore((s) => s.toggleBuildMenu);
   const placeArk = useGameStore((s) => s.placeArk);
   const buildArkSection = useGameStore((s) => s.buildArkSection);
   const coatWithPitch = useGameStore((s) => s.coatWithPitch);
+  const matchMode = useGameStore((s) => s.matchConfig.mode);
+  const animalStates = useGameStore((s) => s.animalStates);
 
+  if (!player || !ark) return null;
+
+  const isVersus = matchMode === 'versus';
   const buildProgress = ark.sectionsBuilt / ark.totalSections;
   const canBuild = ark.position && player.inventory.wood >= 10 && ark.sectionsBuilt < ark.totalSections;
   const canPitch = ark.position && player.inventory.pitch >= 5 && ark.pitchCoated < ark.sectionsBuilt;
@@ -136,8 +153,8 @@ export function BuildMenu() {
   const isHighGround = elevation > 5;
   const isLowGround = elevation < 1;
 
-  // Figure out which animals are boarded (by species pair)
   const boardedIds = new Set(ark.boardedAnimalIds);
+  const buildPhases = computeBuildPhases(ark.totalSections);
 
   const handlePlaceArk = () => {
     placeArk([player.position[0], player.position[1], player.position[2]]);
@@ -153,6 +170,11 @@ export function BuildMenu() {
     transition: 'all 0.15s',
     fontFamily: 'inherit',
   };
+
+  // Requirements summary varies by mode
+  const requirementsSummary = isVersus
+    ? '200 wood (20 sections x 10) | 100 pitch (20 sections x 5) | 7 species (1 each)'
+    : '300 wood (30 sections x 10) | 150 pitch (30 sections x 5) | 14 animals (7 species x 2)';
 
   return (
     <div style={{
@@ -220,19 +242,19 @@ export function BuildMenu() {
           </div>
           <div style={{ fontSize: '12px' }}>
             <span style={{ color: player.inventory.wood >= 10 ? '#2ecc71' : '#e74c3c' }}>
-              {'🪵'} {player.inventory.wood} wood
+              {player.inventory.wood} wood
             </span>
           </div>
           <div style={{ fontSize: '12px' }}>
             <span style={{ color: player.inventory.pitch >= 5 ? '#2ecc71' : '#e74c3c' }}>
-              {'🛢️'} {player.inventory.pitch} pitch
+              {player.inventory.pitch} pitch
             </span>
           </div>
           <div style={{ fontSize: '12px' }}>
-            {'🍞'} {player.inventory.food} food
+            {player.inventory.food} food
           </div>
           <div style={{ fontSize: '12px' }}>
-            {'🌳'} {player.inventory.gopherWood} gopher wood
+            {player.inventory.gopherWood} gopher wood
           </div>
         </div>
 
@@ -277,7 +299,7 @@ export function BuildMenu() {
             Construction Phases
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {BUILD_PHASES.map((phase) => (
+            {buildPhases.map((phase) => (
               <PhaseProgress key={phase.name} phase={phase} sectionsBuilt={ark.sectionsBuilt} />
             ))}
           </div>
@@ -369,36 +391,77 @@ export function BuildMenu() {
             <span style={{ color: '#e8d5a3', fontWeight: 600 }}>Animal Boarding</span>
             <span style={{ color: '#aaa' }}>{ark.animalsBoarded}/{ark.totalAnimals}</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '6px' }}>
-            {SPECIES.map((species, si) => {
-              // Animals are created 2 per species, ids: si*2 and si*2+1
-              const id1 = si * 2;
-              const id2 = si * 2 + 1;
-              const has1 = boardedIds.has(id1);
-              const has2 = boardedIds.has(id2);
-              const pairComplete = has1 && has2;
 
-              return (
-                <div key={species} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 8px',
-                  background: pairComplete ? 'rgba(46,204,113,0.15)' : 'rgba(0,0,0,0.2)',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                }}>
-                  <span>{SPECIES_ICONS[species]}</span>
-                  <span style={{ color: pairComplete ? '#2ecc71' : '#aaa' }}>{species}</span>
-                  <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#777' }}>
-                    {has1 ? '\u2713' : '\u2717'}{has2 ? '\u2713' : '\u2717'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {isVersus ? (
+            // Versus mode: 1 of each species required
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '6px' }}>
+              {SPECIES.map((species) => {
+                const hasSpecies = animalStates.some(
+                  (a) => a.species === species && a.boardedByPlayerId === ark.boardedAnimalIds.find((id) => {
+                    const found = animalStates.find((x) => x.id === id);
+                    return found?.species === species;
+                  }) as unknown as string
+                );
+                // Simpler check: any animal of this species boarded by local player
+                const boardedSpecies = boardedIds.size > 0
+                  ? animalStates.filter((a) => boardedIds.has(a.id)).map((a) => a.species)
+                  : [];
+                const hasOne = boardedSpecies.includes(species);
+
+                return (
+                  <div key={species} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 8px',
+                    background: hasOne ? 'rgba(46,204,113,0.15)' : 'rgba(0,0,0,0.2)',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                  }}>
+                    <span>{SPECIES_ICONS[species]}</span>
+                    <span style={{ color: hasOne ? '#2ecc71' : '#aaa' }}>{species}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#777' }}>
+                      {hasOne ? '\u2713' : '\u2717'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            // Solo mode: pairs required — animals are created 2 per species, ids: si*2 and si*2+1
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '6px' }}>
+              {SPECIES.map((species, si) => {
+                const id1 = si * 2;
+                const id2 = si * 2 + 1;
+                const has1 = boardedIds.has(id1);
+                const has2 = boardedIds.has(id2);
+                const pairComplete = has1 && has2;
+
+                return (
+                  <div key={species} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 8px',
+                    background: pairComplete ? 'rgba(46,204,113,0.15)' : 'rgba(0,0,0,0.2)',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                  }}>
+                    <span>{SPECIES_ICONS[species]}</span>
+                    <span style={{ color: pairComplete ? '#2ecc71' : '#aaa' }}>{species}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#777' }}>
+                      {has1 ? '\u2713' : '\u2717'}{has2 ? '\u2713' : '\u2717'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div style={{ fontSize: '10px', color: '#666', marginTop: '6px' }}>
-            Find animals nearby and press [F] near the ark to board them
+            {isVersus
+              ? 'Herd animals near you then board 1 of each species [F] near the ark'
+              : 'Find animals nearby and press [F] near the ark to board them'}
           </div>
         </div>
 
@@ -412,7 +475,7 @@ export function BuildMenu() {
           color: '#666',
         }}>
           <div style={{ fontWeight: 600, color: '#888', marginBottom: '4px' }}>Total Requirements</div>
-          <div>300 wood (30 sections x 10) | 150 pitch (30 sections x 5) | 14 animals (7 species x 2)</div>
+          <div>{requirementsSummary}</div>
         </div>
       </div>
     </div>

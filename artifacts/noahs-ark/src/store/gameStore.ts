@@ -1,6 +1,23 @@
 import { create } from 'zustand';
+import {
+  generateResourceNodes,
+  generateAnimalStates,
+  getSpawnPosition,
+  PLAYER_COLORS,
+  PLAYER_NAMES,
+} from './worldGen';
 
-export type GameState = 'menu' | 'playing' | 'paused' | 'gameover' | 'victory';
+// --- Types ---
+
+export type GameState = 'menu' | 'lobby' | 'playing' | 'paused' | 'gameover' | 'victory';
+export type MatchMode = 'solo' | 'versus';
+export type AIDifficulty = 'apprentice' | 'prophet' | 'patriarch';
+export type DivinePower = 'revelation' | 'speed_blessing' | 'plague_of_locusts';
+
+export interface MatchConfig {
+  mode: MatchMode;
+  aiDifficulty: AIDifficulty;
+}
 
 export interface Inventory {
   wood: number;
@@ -8,6 +25,12 @@ export interface Inventory {
   food: number;
   gopherWood: number;
   holyArtifacts: number;
+}
+
+export interface ActiveEffect {
+  type: DivinePower;
+  expiresAt: number;
+  targetPlayerId?: string;
 }
 
 export interface PlayerState {
@@ -20,6 +43,10 @@ export interface PlayerState {
   position: [number, number, number];
   inventory: Inventory;
   tool: 'axe' | 'hammer' | 'staff';
+  color: string;
+  name: string;
+  isAI: boolean;
+  activeEffects: ActiveEffect[];
 }
 
 export interface ArkState {
@@ -31,7 +58,7 @@ export interface ArkState {
   boardedAnimalIds: number[];
   buoyancy: number;
   integrity: number;
-  position: [number, number, number] | null; // null = not yet placed
+  position: [number, number, number] | null;
 }
 
 export interface WorldState {
@@ -43,229 +70,294 @@ export interface WorldState {
   tideWarning: boolean;
 }
 
-interface GameStore {
-  gameState: GameState;
-  player: PlayerState;
-  ark: ArkState;
-  world: WorldState;
-  score: number;
-  resetCounter: number;
-  buildMenuOpen: boolean;
-  setGameState: (state: GameState) => void;
-  startGame: () => void;
-  pauseGame: () => void;
-  resumeGame: () => void;
-  gameOver: (victory: boolean) => void;
-  toggleBuildMenu: () => void;
-  updateWaterLevel: (delta: number) => void;
-  updateStormIntensity: (intensity: number) => void;
-  addResource: (resource: keyof Inventory, amount: number) => void;
-  removeResource: (resource: keyof Inventory, amount: number) => boolean;
-  updateHealth: (amount: number) => void;
-  updateStamina: (amount: number) => void;
-  updateFaith: (amount: number) => void;
-  buildArkSection: () => void;
-  coatWithPitch: () => void;
-  boardAnimal: (animalId: number) => void;
-  placeArk: (pos: [number, number, number]) => void;
-  setPlayerPosition: (pos: [number, number, number]) => void;
-  switchTool: (tool: 'axe' | 'hammer' | 'staff') => void;
-  incrementDay: () => void;
-  cameraRotation: number;
-  setCameraRotation: (r: number) => void;
+export interface ResourceNode {
+  id: number;
+  position: [number, number, number];
+  type: 'wood' | 'pitch' | 'food' | 'gopherWood';
+  amount: number;
+  maxAmount: number;
+  lockedBy: string | null;
+  lockedUntil: number;
 }
 
-const initialPlayer: PlayerState = {
-  health: 100,
-  maxHealth: 100,
-  stamina: 100,
-  maxStamina: 100,
-  faith: 50,
-  maxFaith: 100,
-  position: [0, 2, 0],
-  inventory: {
-    wood: 0,
-    pitch: 0,
-    food: 10,
-    gopherWood: 0,
-    holyArtifacts: 0,
-  },
-  tool: 'axe',
-};
+export interface AnimalState {
+  id: number;
+  species: string;
+  color: string;
+  size: [number, number, number];
+  position: [number, number, number];
+  startPosition: [number, number, number];
+  wanderRadius: number;
+  speed: number;
+  paired: boolean;
+  followingPlayerId: string | null;
+  boardedByPlayerId: string | null;
+}
 
-const initialArk: ArkState = {
-  sectionsBuilt: 0,
-  totalSections: 30,
-  pitchCoated: 0,
-  animalsBoarded: 0,
-  totalAnimals: 14,
-  boardedAnimalIds: [],
-  buoyancy: 0,
-  integrity: 100,
-  position: null,
-};
+// --- Constants ---
 
-const initialWorld: WorldState = {
-  waterLevel: -2,
-  waterRiseRate: 0.002,
-  stormIntensity: 0,
-  dayNumber: 1,
-  timeOfDay: 0.5,
-  tideWarning: false,
-};
+const LOCAL_PLAYER_ID = 'player-0';
+const AI_PLAYER_ID = 'player-1';
+
+const SOLO_SECTIONS = 30;
+const VERSUS_SECTIONS = 20;
+const SOLO_ANIMALS = 14;
+const VERSUS_ANIMALS = 7; // 1 of each species
+
+// --- Helpers ---
+
+function makePlayer(
+  index: number,
+  position: [number, number, number],
+  isAI: boolean,
+): PlayerState {
+  return {
+    health: 100,
+    maxHealth: 100,
+    stamina: 100,
+    maxStamina: 100,
+    faith: 50,
+    maxFaith: 100,
+    position,
+    inventory: { wood: 0, pitch: 0, food: 10, gopherWood: 0, holyArtifacts: 0 },
+    tool: 'axe',
+    color: PLAYER_COLORS[index] || '#888888',
+    name: isAI ? 'Rival Patriarch' : (PLAYER_NAMES[index] || 'Player'),
+    isAI,
+    activeEffects: [],
+  };
+}
+
+function makeArk(mode: MatchMode): ArkState {
+  const sections = mode === 'versus' ? VERSUS_SECTIONS : SOLO_SECTIONS;
+  const animals = mode === 'versus' ? VERSUS_ANIMALS : SOLO_ANIMALS;
+  return {
+    sectionsBuilt: 0,
+    totalSections: sections,
+    pitchCoated: 0,
+    animalsBoarded: 0,
+    totalAnimals: animals,
+    boardedAnimalIds: [],
+    buoyancy: 0,
+    integrity: 100,
+    position: null,
+  };
+}
+
+// --- Default config ---
+
+const defaultConfig: MatchConfig = { mode: 'solo', aiDifficulty: 'prophet' };
+
+// --- Store interface ---
+
+interface GameStore {
+  // Match
+  gameState: GameState;
+  matchConfig: MatchConfig;
+  localPlayerId: string;
+
+  // Players (indexed by ID)
+  players: Record<string, PlayerState>;
+  arks: Record<string, ArkState>;
+  scores: Record<string, number>;
+
+  // Shared world
+  world: WorldState;
+  resourceNodes: ResourceNode[];
+  animalStates: AnimalState[];
+
+  // Fog of war
+  discoveredArkIds: string[];
+
+  // UI state
+  resetCounter: number;
+  buildMenuOpen: boolean;
+  cameraRotation: number;
+  showDivineIntervention: boolean;
+  scoreboardOpen: boolean;
+  winnerId: string | null;
+
+  // --- Actions ---
+
+  setGameState: (state: GameState) => void;
+  startGame: (config?: MatchConfig) => void;
+  pauseGame: () => void;
+  resumeGame: () => void;
+  gameOver: (victory: boolean, winnerId?: string) => void;
+  toggleBuildMenu: () => void;
+
+  // World
+  updateWaterLevel: (delta: number) => void;
+  updateStormIntensity: (intensity: number) => void;
+  incrementDay: () => void;
+
+  // Player actions (playerId defaults to localPlayerId)
+  addResource: (resource: keyof Inventory, amount: number, playerId?: string) => void;
+  removeResource: (resource: keyof Inventory, amount: number, playerId?: string) => boolean;
+  updateHealth: (amount: number, playerId?: string) => void;
+  updateStamina: (amount: number, playerId?: string) => void;
+  updateFaith: (amount: number, playerId?: string) => void;
+  setPlayerPosition: (pos: [number, number, number], playerId?: string) => void;
+  switchTool: (tool: 'axe' | 'hammer' | 'staff', playerId?: string) => void;
+
+  // Ark actions
+  placeArk: (pos: [number, number, number], playerId?: string) => void;
+  buildArkSection: (playerId?: string) => void;
+  coatWithPitch: (playerId?: string) => void;
+  boardAnimal: (animalId: number, playerId?: string) => void;
+
+  // Resource nodes
+  gatherResource: (nodeId: number, playerId?: string) => boolean;
+
+  // Animals
+  updateAnimalPosition: (animalId: number, pos: [number, number, number]) => void;
+  setAnimalFollowing: (animalId: number, playerId: string | null) => void;
+
+  // Divine Intervention
+  useDivineIntervention: (power: DivinePower, targetId?: string, playerId?: string) => void;
+  clearExpiredEffects: () => void;
+  setShowDivineIntervention: (show: boolean) => void;
+
+  // Fog of war
+  discoverArk: (arkPlayerId: string) => void;
+
+  // Camera
+  setCameraRotation: (r: number) => void;
+
+  // Scoreboard
+  toggleScoreboard: () => void;
+}
+
+// --- Helpers for updating nested player/ark state ---
+
+function updatePlayer(
+  state: { players: Record<string, PlayerState> },
+  playerId: string,
+  updater: (p: PlayerState) => Partial<PlayerState>,
+): Record<string, PlayerState> {
+  const player = state.players[playerId];
+  if (!player) return state.players;
+  return { ...state.players, [playerId]: { ...player, ...updater(player) } };
+}
+
+function updateArk(
+  state: { arks: Record<string, ArkState> },
+  playerId: string,
+  updater: (a: ArkState) => Partial<ArkState>,
+): Record<string, ArkState> {
+  const ark = state.arks[playerId];
+  if (!ark) return state.arks;
+  return { ...state.arks, [playerId]: { ...ark, ...updater(ark) } };
+}
+
+// --- Create store ---
 
 export const useGameStore = create<GameStore>((set, get) => ({
+  // --- Initial state ---
   gameState: 'menu',
-  player: { ...initialPlayer },
-  ark: { ...initialArk },
-  world: { ...initialWorld },
-  score: 0,
+  matchConfig: defaultConfig,
+  localPlayerId: LOCAL_PLAYER_ID,
+
+  players: {},
+  arks: {},
+  scores: {},
+
+  world: {
+    waterLevel: -2,
+    waterRiseRate: 0.002,
+    stormIntensity: 0,
+    dayNumber: 1,
+    timeOfDay: 0.5,
+    tideWarning: false,
+  },
+  resourceNodes: [],
+  animalStates: [],
+
+  discoveredArkIds: [],
+
   resetCounter: 0,
   buildMenuOpen: false,
   cameraRotation: 0,
+  showDivineIntervention: false,
+  scoreboardOpen: false,
+  winnerId: null,
+
+  // --- Game flow ---
 
   setGameState: (state) => set({ gameState: state }),
 
-  startGame: () => set((state) => ({
-    gameState: 'playing',
-    player: { ...initialPlayer },
-    ark: { ...initialArk },
-    world: { ...initialWorld },
-    score: 0,
-    resetCounter: state.resetCounter + 1,
-    buildMenuOpen: false,
-  })),
+  startGame: (config?: MatchConfig) => {
+    const cfg = config || defaultConfig;
+    const isVersus = cfg.mode === 'versus';
+    const totalPlayers = isVersus ? 2 : 1;
+
+    // Create players
+    const players: Record<string, PlayerState> = {};
+    const arks: Record<string, ArkState> = {};
+    const scores: Record<string, number> = {};
+
+    for (let i = 0; i < totalPlayers; i++) {
+      const id = `player-${i}`;
+      const isAI = i > 0;
+      const pos = isVersus ? getSpawnPosition(i, totalPlayers) : [0, 2, 0] as [number, number, number];
+      players[id] = makePlayer(i, pos, isAI);
+      arks[id] = makeArk(cfg.mode);
+      scores[id] = 0;
+    }
+
+    // Generate world
+    const resourceNodes = generateResourceNodes(cfg);
+    const animalStates = generateAnimalStates(cfg);
+
+    set((state) => ({
+      gameState: 'playing',
+      matchConfig: cfg,
+      localPlayerId: LOCAL_PLAYER_ID,
+      players,
+      arks,
+      scores,
+      world: {
+        waterLevel: -2,
+        waterRiseRate: 0.002,
+        stormIntensity: 0,
+        dayNumber: 1,
+        timeOfDay: 0.5,
+        tideWarning: false,
+      },
+      resourceNodes,
+      animalStates,
+      discoveredArkIds: [],
+      resetCounter: state.resetCounter + 1,
+      buildMenuOpen: false,
+      showDivineIntervention: false,
+      scoreboardOpen: false,
+      winnerId: null,
+    }));
+  },
 
   pauseGame: () => set({ gameState: 'paused', buildMenuOpen: false }),
   resumeGame: () => set({ gameState: 'playing' }),
 
-  gameOver: (victory) => set({ gameState: victory ? 'victory' : 'gameover', buildMenuOpen: false }),
+  gameOver: (victory, winnerId) => set({
+    gameState: victory ? 'victory' : 'gameover',
+    buildMenuOpen: false,
+    winnerId: winnerId || null,
+  }),
 
-  toggleBuildMenu: () => set((state) => ({ buildMenuOpen: !state.buildMenuOpen })),
+  toggleBuildMenu: () => set((s) => ({ buildMenuOpen: !s.buildMenuOpen })),
+
+  // --- World ---
 
   updateWaterLevel: (delta) => set((state) => {
     const newLevel = state.world.waterLevel + delta;
-    const tideWarning = newLevel > 0;
     return {
-      world: { ...state.world, waterLevel: newLevel, tideWarning },
+      world: { ...state.world, waterLevel: newLevel, tideWarning: newLevel > 0 },
     };
   }),
 
   updateStormIntensity: (intensity) => set((state) => ({
     world: { ...state.world, stormIntensity: Math.max(0, Math.min(1, intensity)) },
   })),
-
-  addResource: (resource, amount) => set((state) => ({
-    player: {
-      ...state.player,
-      inventory: {
-        ...state.player.inventory,
-        [resource]: state.player.inventory[resource] + amount,
-      },
-    },
-  })),
-
-  removeResource: (resource, amount) => {
-    const current = get().player.inventory[resource];
-    if (current < amount) return false;
-    set((state) => ({
-      player: {
-        ...state.player,
-        inventory: {
-          ...state.player.inventory,
-          [resource]: state.player.inventory[resource] - amount,
-        },
-      },
-    }));
-    return true;
-  },
-
-  updateHealth: (amount) => set((state) => ({
-    player: {
-      ...state.player,
-      health: Math.max(0, Math.min(state.player.maxHealth, state.player.health + amount)),
-    },
-  })),
-
-  updateStamina: (amount) => set((state) => ({
-    player: {
-      ...state.player,
-      stamina: Math.max(0, Math.min(state.player.maxStamina, state.player.stamina + amount)),
-    },
-  })),
-
-  updateFaith: (amount) => set((state) => ({
-    player: {
-      ...state.player,
-      faith: Math.max(0, Math.min(state.player.maxFaith, state.player.faith + amount)),
-    },
-  })),
-
-  placeArk: (pos) => {
-    const state = get();
-    if (state.ark.position !== null) return; // already placed
-    set({
-      ark: { ...state.ark, position: pos },
-      score: state.score + 50,
-    });
-  },
-
-  buildArkSection: () => {
-    const state = get();
-    if (!state.ark.position) return; // must place first
-    if (state.player.inventory.wood >= 10 && state.ark.sectionsBuilt < state.ark.totalSections) {
-      set({
-        player: {
-          ...state.player,
-          inventory: { ...state.player.inventory, wood: state.player.inventory.wood - 10 },
-        },
-        ark: {
-          ...state.ark,
-          sectionsBuilt: state.ark.sectionsBuilt + 1,
-          buoyancy: ((state.ark.sectionsBuilt + 1) / state.ark.totalSections) * 100,
-        },
-        score: state.score + 100,
-      });
-    }
-  },
-
-  coatWithPitch: () => {
-    const state = get();
-    if (state.player.inventory.pitch >= 5 && state.ark.pitchCoated < state.ark.sectionsBuilt) {
-      set({
-        player: {
-          ...state.player,
-          inventory: { ...state.player.inventory, pitch: state.player.inventory.pitch - 5 },
-        },
-        ark: { ...state.ark, pitchCoated: state.ark.pitchCoated + 1 },
-        score: state.score + 50,
-      });
-    }
-  },
-
-  boardAnimal: (animalId: number) => {
-    const state = get();
-    if (state.ark.boardedAnimalIds.includes(animalId)) return;
-    if (state.ark.animalsBoarded >= state.ark.totalAnimals) return;
-    set({
-      ark: {
-        ...state.ark,
-        animalsBoarded: state.ark.animalsBoarded + 1,
-        boardedAnimalIds: [...state.ark.boardedAnimalIds, animalId],
-      },
-      score: state.score + 200,
-    });
-  },
-
-  setPlayerPosition: (pos) => set((state) => ({
-    player: { ...state.player, position: pos },
-  })),
-
-  switchTool: (tool) => set((state) => ({
-    player: { ...state.player, tool },
-  })),
-
-  setCameraRotation: (r) => set({ cameraRotation: r }),
 
   incrementDay: () => set((state) => ({
     world: {
@@ -274,4 +366,296 @@ export const useGameStore = create<GameStore>((set, get) => ({
       waterRiseRate: state.world.waterRiseRate * 1.05,
     },
   })),
+
+  // --- Player actions ---
+
+  addResource: (resource, amount, playerId) => {
+    const id = playerId || get().localPlayerId;
+    set((state) => ({
+      players: updatePlayer(state, id, (p) => ({
+        inventory: { ...p.inventory, [resource]: p.inventory[resource] + amount },
+      })),
+    }));
+  },
+
+  removeResource: (resource, amount, playerId) => {
+    const id = playerId || get().localPlayerId;
+    const player = get().players[id];
+    if (!player || player.inventory[resource] < amount) return false;
+    set((state) => ({
+      players: updatePlayer(state, id, (p) => ({
+        inventory: { ...p.inventory, [resource]: p.inventory[resource] - amount },
+      })),
+    }));
+    return true;
+  },
+
+  updateHealth: (amount, playerId) => {
+    const id = playerId || get().localPlayerId;
+    set((state) => ({
+      players: updatePlayer(state, id, (p) => ({
+        health: Math.max(0, Math.min(p.maxHealth, p.health + amount)),
+      })),
+    }));
+  },
+
+  updateStamina: (amount, playerId) => {
+    const id = playerId || get().localPlayerId;
+    set((state) => ({
+      players: updatePlayer(state, id, (p) => ({
+        stamina: Math.max(0, Math.min(p.maxStamina, p.stamina + amount)),
+      })),
+    }));
+  },
+
+  updateFaith: (amount, playerId) => {
+    const id = playerId || get().localPlayerId;
+    set((state) => ({
+      players: updatePlayer(state, id, (p) => ({
+        faith: Math.max(0, Math.min(p.maxFaith, p.faith + amount)),
+      })),
+    }));
+  },
+
+  setPlayerPosition: (pos, playerId) => {
+    const id = playerId || get().localPlayerId;
+    set((state) => ({
+      players: updatePlayer(state, id, () => ({ position: pos })),
+    }));
+  },
+
+  switchTool: (tool, playerId) => {
+    const id = playerId || get().localPlayerId;
+    set((state) => ({
+      players: updatePlayer(state, id, () => ({ tool })),
+    }));
+  },
+
+  // --- Ark actions ---
+
+  placeArk: (pos, playerId) => {
+    const id = playerId || get().localPlayerId;
+    const state = get();
+    const ark = state.arks[id];
+    if (!ark || ark.position !== null) return;
+    set({
+      arks: updateArk(state, id, () => ({ position: pos })),
+      scores: { ...state.scores, [id]: (state.scores[id] || 0) + 50 },
+    });
+  },
+
+  buildArkSection: (playerId) => {
+    const id = playerId || get().localPlayerId;
+    const state = get();
+    const player = state.players[id];
+    const ark = state.arks[id];
+    if (!player || !ark || !ark.position) return;
+    if (player.inventory.wood < 10 || ark.sectionsBuilt >= ark.totalSections) return;
+
+    set({
+      players: updatePlayer(state, id, (p) => ({
+        inventory: { ...p.inventory, wood: p.inventory.wood - 10 },
+      })),
+      arks: updateArk(state, id, (a) => ({
+        sectionsBuilt: a.sectionsBuilt + 1,
+        buoyancy: ((a.sectionsBuilt + 1) / a.totalSections) * 100,
+      })),
+      scores: { ...state.scores, [id]: (state.scores[id] || 0) + 100 },
+    });
+  },
+
+  coatWithPitch: (playerId) => {
+    const id = playerId || get().localPlayerId;
+    const state = get();
+    const player = state.players[id];
+    const ark = state.arks[id];
+    if (!player || !ark) return;
+    if (player.inventory.pitch < 5 || ark.pitchCoated >= ark.sectionsBuilt) return;
+
+    set({
+      players: updatePlayer(state, id, (p) => ({
+        inventory: { ...p.inventory, pitch: p.inventory.pitch - 5 },
+      })),
+      arks: updateArk(state, id, (a) => ({
+        pitchCoated: a.pitchCoated + 1,
+      })),
+      scores: { ...state.scores, [id]: (state.scores[id] || 0) + 50 },
+    });
+  },
+
+  boardAnimal: (animalId, playerId) => {
+    const id = playerId || get().localPlayerId;
+    const state = get();
+    const ark = state.arks[id];
+    if (!ark || ark.boardedAnimalIds.includes(animalId)) return;
+    if (ark.animalsBoarded >= ark.totalAnimals) return;
+
+    // Check animal isn't already boarded by someone else
+    const animal = state.animalStates.find((a) => a.id === animalId);
+    if (!animal || animal.boardedByPlayerId !== null) return;
+
+    // In versus mode, check unique species requirement
+    if (state.matchConfig.mode === 'versus') {
+      const alreadyHasSpecies = ark.boardedAnimalIds.some((aid) => {
+        const a = state.animalStates.find((x) => x.id === aid);
+        return a && a.species === animal.species;
+      });
+      if (alreadyHasSpecies) return; // already have one of this species
+    }
+
+    set({
+      arks: updateArk(state, id, (a) => ({
+        animalsBoarded: a.animalsBoarded + 1,
+        boardedAnimalIds: [...a.boardedAnimalIds, animalId],
+      })),
+      animalStates: state.animalStates.map((a) =>
+        a.id === animalId ? { ...a, boardedByPlayerId: id, followingPlayerId: null } : a,
+      ),
+      scores: { ...state.scores, [id]: (state.scores[id] || 0) + 200 },
+    });
+  },
+
+  // --- Resource nodes ---
+
+  gatherResource: (nodeId, playerId) => {
+    const id = playerId || get().localPlayerId;
+    const state = get();
+    const node = state.resourceNodes.find((n) => n.id === nodeId);
+    if (!node || node.amount <= 0) return false;
+
+    // Check lock
+    const now = Date.now();
+    if (node.lockedBy && node.lockedBy !== id && node.lockedUntil > now) return false;
+
+    // Deplete 1 unit and lock for 2s
+    set({
+      resourceNodes: state.resourceNodes.map((n) =>
+        n.id === nodeId
+          ? { ...n, amount: n.amount - 1, lockedBy: id, lockedUntil: now + 2000 }
+          : n,
+      ),
+    });
+
+    // Add to player inventory
+    get().addResource(node.type, 1, id);
+    get().updateFaith(1, id);
+    return true;
+  },
+
+  // --- Animals ---
+
+  updateAnimalPosition: (animalId, pos) => set((state) => ({
+    animalStates: state.animalStates.map((a) =>
+      a.id === animalId ? { ...a, position: pos } : a,
+    ),
+  })),
+
+  setAnimalFollowing: (animalId, playerId) => set((state) => ({
+    animalStates: state.animalStates.map((a) =>
+      a.id === animalId ? { ...a, followingPlayerId: playerId } : a,
+    ),
+  })),
+
+  // --- Divine Intervention ---
+
+  useDivineIntervention: (power, targetId, playerId) => {
+    const id = playerId || get().localPlayerId;
+    const state = get();
+    const player = state.players[id];
+    if (!player || player.faith < 100) return;
+
+    const effect: ActiveEffect = {
+      type: power,
+      expiresAt: Date.now() + (power === 'revelation' ? 30000 : power === 'speed_blessing' ? 20000 : 0),
+      targetPlayerId: targetId,
+    };
+
+    // Apply immediate effects
+    if (power === 'plague_of_locusts' && targetId) {
+      const target = state.players[targetId];
+      if (target) {
+        const newFood = Math.floor(target.inventory.food / 2);
+        set({
+          players: {
+            ...updatePlayer(state, id, (p) => ({
+              faith: 50,
+              activeEffects: [...p.activeEffects, effect],
+            })),
+            [targetId]: {
+              ...target,
+              inventory: { ...target.inventory, food: newFood },
+            },
+          },
+          showDivineIntervention: false,
+        });
+        return;
+      }
+    }
+
+    // Duration effects (revelation, speed blessing)
+    set({
+      players: updatePlayer(state, id, (p) => ({
+        faith: 50,
+        activeEffects: [...p.activeEffects, effect],
+      })),
+      showDivineIntervention: false,
+    });
+  },
+
+  clearExpiredEffects: () => {
+    const now = Date.now();
+    set((state) => {
+      const newPlayers = { ...state.players };
+      let changed = false;
+      for (const [pid, player] of Object.entries(newPlayers)) {
+        const filtered = player.activeEffects.filter(
+          (e) => e.expiresAt === 0 || e.expiresAt > now,
+        );
+        if (filtered.length !== player.activeEffects.length) {
+          newPlayers[pid] = { ...player, activeEffects: filtered };
+          changed = true;
+        }
+      }
+      return changed ? { players: newPlayers } : {};
+    });
+  },
+
+  setShowDivineIntervention: (show) => set({ showDivineIntervention: show }),
+
+  // --- Fog of war ---
+
+  discoverArk: (arkPlayerId) => set((state) => {
+    if (state.discoveredArkIds.includes(arkPlayerId)) return {};
+    return { discoveredArkIds: [...state.discoveredArkIds, arkPlayerId] };
+  }),
+
+  // --- Camera ---
+
+  setCameraRotation: (r) => set({ cameraRotation: r }),
+
+  // --- Scoreboard ---
+
+  toggleScoreboard: () => set((s) => ({ scoreboardOpen: !s.scoreboardOpen })),
 }));
+
+// --- Selector helpers for backward compatibility ---
+// Use these in components that previously read s.player, s.ark, s.score
+
+export const selectLocalPlayer = (s: GameStore) => s.players[s.localPlayerId];
+export const selectLocalArk = (s: GameStore) => s.arks[s.localPlayerId];
+export const selectLocalScore = (s: GameStore) => s.scores[s.localPlayerId] ?? 0;
+
+/** Check if a player has an active effect of the given type */
+export function hasActiveEffect(player: PlayerState, type: DivinePower): boolean {
+  const now = Date.now();
+  return player.activeEffects.some(
+    (e) => e.type === type && (e.expiresAt === 0 || e.expiresAt > now),
+  );
+}
+
+/** Get all player IDs */
+export const selectAllPlayerIds = (s: GameStore) => Object.keys(s.players);
+
+/** Get rival player IDs (all except local) */
+export const selectRivalIds = (s: GameStore) =>
+  Object.keys(s.players).filter((id) => id !== s.localPlayerId);

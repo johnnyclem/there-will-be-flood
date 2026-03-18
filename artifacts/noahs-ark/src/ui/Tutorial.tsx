@@ -107,7 +107,10 @@ export function Tutorial() {
       if (state.gameState !== 'playing') return;
       if (showTimerRef.current) return;
 
-      const [px, , pz] = state.player.position;
+      const player = state.players[state.localPlayerId];
+      const ark = state.arks[state.localPlayerId];
+      if (!player || !ark) return;
+      const [px, , pz] = player.position;
       const dist = Math.sqrt(px * px + pz * pz);
       const age = (Date.now() - stepStartRef.current) / 1000;
 
@@ -121,15 +124,15 @@ export function Tutorial() {
           break;
         case 2:
           triggered =
-            state.player.inventory.wood > 0 ||
-            state.player.inventory.gopherWood > 0 ||
+            player.inventory.wood > 0 ||
+            player.inventory.gopherWood > 0 ||
             age > 60;
           break;
         case 3:
-          triggered = state.ark.sectionsBuilt > 0 || age > 120;
+          triggered = ark.sectionsBuilt > 0 || age > 120;
           break;
         case 4:
-          triggered = state.ark.animalsBoarded > 0 || age > 120;
+          triggered = ark.animalsBoarded > 0 || age > 120;
           break;
       }
 

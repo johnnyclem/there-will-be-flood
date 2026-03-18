@@ -1,14 +1,14 @@
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { useGameStore } from "../store/gameStore";
+import { useGameStore, selectLocalPlayer } from "../store/gameStore";
 
 const MAX_PARTICLES = 3000;
 
 export function Rain() {
   const pointsRef = useRef<THREE.Points>(null);
   const stormIntensity = useGameStore((s) => s.world.stormIntensity);
-  const playerPos = useGameStore((s) => s.player.position);
+  const playerPos = useGameStore((s) => selectLocalPlayer(s)?.position ?? [0, 0, 0] as [number, number, number]);
   const gameState = useGameStore((s) => s.gameState);
   const updateStormIntensity = useGameStore((s) => s.updateStormIntensity);
   const waterLevel = useGameStore((s) => s.world.waterLevel);

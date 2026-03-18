@@ -11,6 +11,9 @@ import { Animals } from './Animals';
 import { Resources } from './Resources';
 import { Lighting, Fog } from './Lighting';
 import { InteractionSystem } from './InteractionSystem';
+import { RivalPlayer } from './RivalPlayer';
+import { RivalArk } from './RivalArk';
+import { useGameStore, selectRivalIds } from '../store/gameStore';
 
 const keyMap = [
   { name: Controls.forward, keys: ['ArrowUp', 'KeyW'] },
@@ -24,6 +27,20 @@ const keyMap = [
   { name: Controls.tool2, keys: ['Digit2'] },
   { name: Controls.tool3, keys: ['Digit3'] },
 ];
+
+function RivalEntities() {
+  const rivalIds = useGameStore(selectRivalIds);
+  return (
+    <>
+      {rivalIds.map((id) => (
+        <group key={id}>
+          <RivalPlayer playerId={id} />
+          <RivalArk playerId={id} />
+        </group>
+      ))}
+    </>
+  );
+}
 
 export function GameScene() {
   return (
@@ -43,6 +60,7 @@ export function GameScene() {
         <Animals />
         <Resources />
         <Player />
+        <RivalEntities />
         <GameCamera />
         <Rain />
       </Canvas>

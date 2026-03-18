@@ -1,4 +1,10 @@
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, type AIDifficulty } from '../store/gameStore';
+
+const DIFFICULTY_INFO: Array<{ key: AIDifficulty; label: string; description: string }> = [
+  { key: 'apprentice', label: 'Apprentice', description: 'Novice builder' },
+  { key: 'prophet', label: 'Prophet', description: 'Worthy opponent' },
+  { key: 'patriarch', label: 'Patriarch', description: 'Master strategist' },
+];
 
 export function MainMenu() {
   const startGame = useGameStore((s) => s.startGame);
@@ -80,11 +86,13 @@ export function MainMenu() {
         marginTop: '60px',
         display: 'flex',
         flexDirection: 'column',
+        alignItems: 'center',
         gap: '16px',
         zIndex: 1,
       }}>
+        {/* Solo journey button */}
         <button
-          onClick={startGame}
+          onClick={() => startGame({ mode: 'solo', aiDifficulty: 'prophet' })}
           style={{
             padding: '16px 48px',
             fontSize: '20px',
@@ -109,6 +117,81 @@ export function MainMenu() {
         >
           Begin Journey
         </button>
+
+        {/* Divider */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '14px',
+          marginTop: '8px',
+          marginBottom: '4px',
+          width: '100%',
+          maxWidth: '440px',
+        }}>
+          <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, transparent, rgba(218,165,32,0.3))' }} />
+          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', letterSpacing: '2px', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+            or
+          </span>
+          <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, transparent, rgba(218,165,32,0.3))' }} />
+        </div>
+
+        {/* Versus AI section */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            fontSize: '13px',
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.5)',
+            marginBottom: '14px',
+          }}>
+            Challenge a Rival
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            {DIFFICULTY_INFO.map(({ key, label, description }) => (
+              <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                <button
+                  onClick={() => startGame({ mode: 'versus', aiDifficulty: key })}
+                  style={{
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    background: 'linear-gradient(135deg, #5a3a10 0%, #8B5E14 100%)',
+                    color: '#e8d5a3',
+                    border: '1px solid rgba(218,165,32,0.35)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontFamily: "'Georgia', serif",
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    transition: 'all 0.25s',
+                    minWidth: '120px',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.06)';
+                    e.currentTarget.style.boxShadow = '0 0 20px rgba(180,120,30,0.45)';
+                    e.currentTarget.style.borderColor = 'rgba(218,165,32,0.7)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #7a5218 0%, #B8860B 100%)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = 'rgba(218,165,32,0.35)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, #5a3a10 0%, #8B5E14 100%)';
+                  }}
+                >
+                  {label}
+                </button>
+                <span style={{
+                  fontSize: '11px',
+                  color: 'rgba(255,255,255,0.35)',
+                  letterSpacing: '1px',
+                }}>
+                  {description}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div style={{

@@ -1,14 +1,33 @@
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, selectLocalArk, selectLocalScore } from '../store/gameStore';
 
 export function GameOverScreen() {
   const gameState = useGameStore((s) => s.gameState);
-  const score = useGameStore((s) => s.score);
-  const ark = useGameStore((s) => s.ark);
+  const score = useGameStore(selectLocalScore);
+  const ark = useGameStore(selectLocalArk);
   const world = useGameStore((s) => s.world);
   const startGame = useGameStore((s) => s.startGame);
   const setGameState = useGameStore((s) => s.setGameState);
+  const matchConfig = useGameStore((s) => s.matchConfig);
+  const winnerId = useGameStore((s) => s.winnerId);
+  const localPlayerId = useGameStore((s) => s.localPlayerId);
+  const scores = useGameStore((s) => s.scores);
+  const players = useGameStore((s) => s.players);
 
   const isVictory = gameState === 'victory';
+  const isVersus = matchConfig.mode === 'versus';
+
+  // Determine if local player won in versus mode
+  const localPlayerWon = winnerId === localPlayerId;
+  const winnerName = winnerId ? (players[winnerId]?.name ?? winnerId) : null;
+
+  // Get rival scores for versus display
+  const rivalEntries = Object.entries(scores)
+    .filter(([id]) => id !== localPlayerId)
+    .map(([id, s]) => ({ id, score: s, name: players[id]?.name ?? id }));
+
+  const handleRestart = () => {
+    startGame(matchConfig);
+  };
 
   return (
     <div style={{
@@ -38,8 +57,20 @@ export function GameOverScreen() {
           ? '0 0 40px rgba(218,165,32,0.5)'
           : '0 0 40px rgba(231,76,60,0.5)',
       }}>
-        {isVictory ? 'Salvation' : 'The Flood Claims All'}
+        {isVictory
+          ? (isVersus ? (localPlayerWon ? 'Victory!' : 'Defeated') : 'Salvation')
+          : 'The Flood Claims All'}
       </h1>
+
+      {isVersus && isVictory && winnerName && (
+        <div style={{
+          fontSize: '20px',
+          color: localPlayerWon ? '#e8d5a3' : '#e74c3c',
+          marginBottom: '8px',
+        }}>
+          {localPlayerWon ? 'You built the Ark first!' : `${winnerName} completed their Ark first`}
+        </div>
+      )}
 
       <p style={{
         fontSize: '18px',
@@ -50,8 +81,8 @@ export function GameOverScreen() {
         lineHeight: '1.6',
       }}>
         {isVictory
-          ? '"And the ark rested upon the mountains of Ararat." — Genesis 8:4'
-          : '"The waters prevailed exceedingly upon the earth." — Genesis 7:19'}
+          ? '"And the ark rested upon the mountains of Ararat." \u2014 Genesis 8:4'
+          : '"The waters prevailed exceedingly upon the earth." \u2014 Genesis 7:19'}
       </p>
 
       <div style={{
@@ -63,16 +94,31 @@ export function GameOverScreen() {
         border: '1px solid rgba(255,255,255,0.1)',
       }}>
         <div style={{ fontSize: '14px', lineHeight: '2' }}>
-          <div>Score: <span style={{ color: '#f1c40f', fontWeight: 'bold' }}>{score}</span></div>
+          <div>Your Score: <span style={{ color: '#f1c40f', fontWeight: 'bold' }}>{score}</span></div>
           <div>Days Survived: {world.dayNumber}</div>
-          <div>Ark Progress: {Math.round((ark.sectionsBuilt / ark.totalSections) * 100)}%</div>
-          <div>Animals Saved: {ark.animalsBoarded}/{ark.totalAnimals}</div>
+          {ark && (
+            <>
+              <div>Ark Progress: {Math.round((ark.sectionsBuilt / ark.totalSections) * 100)}%</div>
+              <div>Animals Saved: {ark.animalsBoarded}/{ark.totalAnimals}</div>
+            </>
+          )}
         </div>
+
+        {isVersus && rivalEntries.length > 0 && (
+          <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
+            <div style={{ fontSize: '13px', color: '#aaa', marginBottom: '6px' }}>Rival Scores</div>
+            {rivalEntries.map(({ id, score: rivalScore, name }) => (
+              <div key={id} style={{ fontSize: '13px', color: id === winnerId ? '#f1c40f' : '#888' }}>
+                {name}: {rivalScore} {id === winnerId ? '(Winner)' : ''}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '16px' }}>
         <button
-          onClick={startGame}
+          onClick={handleRestart}
           style={{
             padding: '14px 36px',
             fontSize: '18px',
