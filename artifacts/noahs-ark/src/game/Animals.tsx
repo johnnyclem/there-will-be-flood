@@ -221,6 +221,12 @@ function Animal({ data }: { data: AnimalState }) {
   const [isSubmerged, setIsSubmerged] = useState(false);
   const [canBoard, setCanBoard] = useState(false);
 
+  // Get follower color for tether line — must be called before any conditional return (Rules of Hooks)
+  const followerColor = useGameStore((s) => {
+    if (!data.followingPlayerId) return null;
+    return s.players[data.followingPlayerId]?.color ?? null;
+  });
+
   useFrame((_, delta) => {
     if (!groupRef.current || gameState !== 'playing' || isBoarded) return;
 
@@ -346,12 +352,6 @@ function Animal({ data }: { data: AnimalState }) {
   });
 
   if (isSubmerged || isBoarded) return null;
-
-  // Get follower color for tether line
-  const followerColor = useGameStore((s) => {
-    if (!data.followingPlayerId) return null;
-    return s.players[data.followingPlayerId]?.color ?? null;
-  });
 
   return (
     <group ref={groupRef} position={[data.startPosition[0], startTerrainY + data.size[1] / 2, data.startPosition[2]]}>

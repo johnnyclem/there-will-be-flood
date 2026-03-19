@@ -76,6 +76,8 @@ export function GameCamera() {
     };
   }, [gameState]);
 
+  const lastRotationRef = useRef(rotation);
+
   useFrame(() => {
     if (gameState !== 'playing') return;
 
@@ -108,7 +110,11 @@ export function GameCamera() {
     camera.position.lerp(_cameraPos, 0.08);
     camera.lookAt(targetRef.current);
 
-    setCameraRotation(rotation);
+    // Only update store when rotation actually changed
+    if (rotation !== lastRotationRef.current) {
+      lastRotationRef.current = rotation;
+      setCameraRotation(rotation);
+    }
   });
 
   return null;
