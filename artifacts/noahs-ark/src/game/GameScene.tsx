@@ -18,16 +18,30 @@ import { useGameStore, selectRivalIds } from '../store/gameStore';
 
 class CanvasErrorBoundary extends Component<
   { children: ReactNode },
-  { error: Error | null }
+  { error: Error | null; retryCount: number }
 > {
-  state: { error: Error | null } = { error: null };
+  state: { error: Error | null; retryCount: number } = { error: null, retryCount: 0 };
 
   static getDerivedStateFromError(error: Error) {
     return { error };
   }
 
+  componentDidCatch(error: Error, info: { componentStack?: string }) {
+    console.error('[GameScene] Render error caught by boundary:', error);
+    if (info.componentStack) {
+      console.error('[GameScene] Component stack:', info.componentStack);
+    }
+  }
+
+  handleRetry = () => {
+    this.setState((prev) => ({ error: null, retryCount: prev.retryCount + 1 }));
+  };
+
   render() {
     if (this.state.error) {
+      const msg = this.state.error.message || 'Unknown error';
+      const isWebGL = /webgl|context|gpu|shader/i.test(msg);
+
       return (
         <div style={{
           width: '100vw',
@@ -41,30 +55,68 @@ class CanvasErrorBoundary extends Component<
           fontFamily: "'Georgia', serif",
           textAlign: 'center',
           padding: '40px',
+          zIndex: 9999,
+          position: 'fixed',
+          top: 0,
+          left: 0,
         }}>
           <h2 style={{ fontSize: '24px', marginBottom: '16px' }}>
-            WebGL Error
+            {isWebGL ? 'WebGL Error' : 'Rendering Error'}
           </h2>
           <p style={{ color: '#aaa', maxWidth: '400px', lineHeight: '1.6' }}>
-            Could not initialize 3D rendering. Please try refreshing the page
-            or check that your browser supports WebGL.
+            {isWebGL
+              ? 'Could not initialize 3D rendering. Please try refreshing the page or check that your browser supports WebGL.'
+              : 'Something went wrong while rendering the 3D scene.'}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              marginTop: '20px',
-              padding: '12px 32px',
-              background: 'linear-gradient(135deg, #8B6914, #DAA520)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontFamily: "'Georgia', serif",
-              fontSize: '16px',
-            }}
-          >
-            Refresh
-          </button>
+          <pre style={{
+            color: '#ff6b6b',
+            fontSize: '12px',
+            maxWidth: '500px',
+            overflow: 'auto',
+            marginTop: '12px',
+            padding: '8px 12px',
+            background: '#1a1a2e',
+            borderRadius: '6px',
+            textAlign: 'left',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}>
+            {msg}
+          </pre>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+            {this.state.retryCount < 2 && (
+              <button
+                onClick={this.handleRetry}
+                style={{
+                  padding: '12px 32px',
+                  background: 'linear-gradient(135deg, #8B6914, #DAA520)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontFamily: "'Georgia', serif",
+                  fontSize: '16px',
+                }}
+              >
+                Try Again
+              </button>
+            )}
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '12px 32px',
+                background: '#333',
+                color: '#e8d5a3',
+                border: '1px solid #555',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontFamily: "'Georgia', serif",
+                fontSize: '16px',
+              }}
+            >
+              Reload Page
+            </button>
+          </div>
         </div>
       );
     }
