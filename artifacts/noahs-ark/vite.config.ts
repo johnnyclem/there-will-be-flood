@@ -19,7 +19,14 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
+    runtimeErrorOverlay({
+      filter: (error: Error) => {
+        const msg = error?.message ?? '';
+        // Don't show overlay for Three.js / WebGL errors — the game handles them
+        if (msg.includes('WebGL') || msg.includes('THREE')) return false;
+        return true;
+      },
+    }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
