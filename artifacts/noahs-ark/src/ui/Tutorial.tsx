@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { speak, stopSpeaking, preload } from '../utils/narration';
 
 interface TutorialStep {
   title: string;
@@ -89,6 +90,29 @@ const STEPS: TutorialStep[] = [
   },
 ];
 
+/**
+ * Shorter, punchier voice lines for each tutorial step.
+ * Kept under ~15 seconds of spoken audio per step.
+ */
+const NARRATION: string[] = [
+  "Noah! It's Me. God. Yes, THE God. Don't look so surprised — I literally made you from dust. Here's the situation: I'm sending a flood. A big one. Biblical, you might say. But you're a righteous man. The ONLY righteous man, actually. So build a giant ark, fill it with animals, and ride out the apocalypse. Simple, right?",
+  "See those resource piles? Walk up and press E to gather them. Wood, pitch for waterproofing, and food — even God's chosen have got to eat. And keep an eye out for Gopher Wood up on the hills. No, it has nothing to do with gophers. My naming conventions are not up for debate.",
+  "Excellent! Now head over to your future ark. Press B to build a section, costs ten wood. Thirty sections total. Yes, thirty. I don't do dinghies, Noah. And DON'T skip the waterproofing — one leaky plank and your luxury ark becomes a luxury submarine.",
+  "Now for the fun part — animals. You need two of every kind. Walk near an animal close to the ark and press F to board it. Pro tip from the Almighty: don't put the wolves next to the sheep.",
+  "About that flood I mentioned... every day the rain gets heavier and the flood rises faster. Your divine checklist: build all thirty ark sections, coat them with pitch, board fourteen animals, and... don't drown. I'm off to prepare the rainbow. You've got this, Noah. Probably. Mostly.",
+];
+
+const GOD_QUIPS: string[] = [
+  "I can see you're taking the scenic route, Noah. The flood won't wait forever.",
+  "That's a lot of wood you're carrying. Very impressive. Now BUILD something.",
+  "The animals are getting restless. Probably because someone hasn't built their ark yet.",
+  "You know, when I said 'be fruitful and multiply,' I didn't mean the termites.",
+  "I'm watching you, Noah. Well, I'm watching everyone, but especially you right now.",
+  "Fun fact: I invented rain specifically for this moment. You're welcome.",
+  "The elephants want to know if there's a weight limit on the ark. I told them not to worry.",
+  "Noah, the doves are complaining about turbulence again. Remind them they can literally fly.",
+];
+
 export function Tutorial() {
   const [step, setStep] = useState(0);
   const [showing, setShowing] = useState(false);
@@ -96,7 +120,14 @@ export function Tutorial() {
   const [skipped, setSkipped] = useState(false);
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepStartRef = useRef(Date.now());
+  const quipIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gameState = useGameStore((s) => s.gameState);
+
+  // Preload all narration audio once on mount to warm the cache.
+  useEffect(() => {
+    preload(NARRATION);
+    preload(GOD_QUIPS);
+  }, []);
 
   // Poll game state for trigger conditions without per-frame re-renders
   useEffect(() => {
@@ -156,7 +187,54 @@ export function Tutorial() {
     };
   }, [step, showing, skipped]);
 
+  // Speak the narration for the current step when it becomes visible.
+  useEffect(() => {
+    if (!showing || skipped || step >= NARRATION.length) return;
+    speak(NARRATION[step]).catch(() => {
+      // Non-blocking: ignore any unexpected error.
+    });
+  }, [showing, step, skipped]);
+
+  // Random God quips once the tutorial is completed/skipped.
+  useEffect(() => {
+    if (!skipped) return;
+    if (gameState !== 'playing') return;
+
+    const scheduleNextQuip = () => {
+      // Random interval between 90 and 120 seconds.
+      const delay = (90 + Math.random() * 30) * 1000;
+      quipIntervalRef.current = setTimeout(() => {
+        const quip = GOD_QUIPS[Math.floor(Math.random() * GOD_QUIPS.length)];
+        speak(quip).catch(() => {
+          // Non-blocking: ignore errors.
+        });
+        scheduleNextQuip();
+      }, delay);
+    };
+
+    scheduleNextQuip();
+
+    return () => {
+      if (quipIntervalRef.current) {
+        clearTimeout(quipIntervalRef.current);
+        quipIntervalRef.current = null;
+      }
+    };
+  }, [skipped, gameState]);
+
+  // Clean up quip interval on unmount.
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+      if (quipIntervalRef.current) {
+        clearTimeout(quipIntervalRef.current);
+        quipIntervalRef.current = null;
+      }
+    };
+  }, []);
+
   const dismiss = useCallback(() => {
+    stopSpeaking();
     setExiting(true);
     setTimeout(() => {
       setShowing(false);
@@ -171,6 +249,7 @@ export function Tutorial() {
   }, [step]);
 
   const skipAll = useCallback(() => {
+    stopSpeaking();
     setExiting(true);
     setTimeout(() => {
       setShowing(false);

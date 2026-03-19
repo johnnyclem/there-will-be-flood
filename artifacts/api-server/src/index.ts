@@ -1,12 +1,10 @@
+import { config } from 'dotenv';
+import path from 'path';
+config({ path: path.resolve(import.meta.dirname, '..', '..', '..', '.env') });
+
 import app from "./app";
 
-const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
+const rawPort = process.env["API_PORT"] || process.env["PORT"] || "3001";
 
 const port = Number(rawPort);
 
