@@ -1,9 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   useGameStore,
   selectLocalPlayer,
   selectLocalArk,
 } from "../store/gameStore";
+import { SFX } from "../utils/sfx";
+
+/** Distance within which to trigger rival proximity alert */
+const RIVAL_ALERT_RANGE = 15;
+const RIVAL_ALERT_RANGE_SQ = RIVAL_ALERT_RANGE * RIVAL_ALERT_RANGE;
+/** Cooldown between rival proximity alerts (seconds) */
+const RIVAL_ALERT_COOLDOWN = 5000;
 
 export function InteractionSystem() {
   const gameState = useGameStore((s) => s.gameState);
@@ -152,6 +159,43 @@ export function InteractionSystem() {
     }, 500);
     return () => clearInterval(interval);
   }, [gameState, setShowDivineIntervention]);
+
+  // Rival proximity alert — play sound when rival is close
+  const lastRivalAlertRef = useRef<number>(0);
+  useEffect(() => {
+    if (gameState !== "playing") return;
+
+    const interval = setInterval(() => {
+      const state = useGameStore.getState();
+      if (state.matchConfig.mode !== "versus") return;
+
+      const localPlayer = state.players[state.localPlayerId];
+      if (!localPlayer) return;
+
+      const rivalIds = Object.keys(state.players).filter(
+        (id) => id !== state.localPlayerId,
+      );
+
+      for (const rivalId of rivalIds) {
+        const rival = state.players[rivalId];
+        if (!rival) continue;
+
+        const dx = localPlayer.position[0] - rival.position[0];
+        const dz = localPlayer.position[2] - rival.position[2];
+        const distSq = dx * dx + dz * dz;
+
+        if (distSq < RIVAL_ALERT_RANGE_SQ) {
+          const now = Date.now();
+          if (now - lastRivalAlertRef.current > RIVAL_ALERT_COOLDOWN) {
+            lastRivalAlertRef.current = now;
+            SFX.rivalNearby();
+          }
+          break; // Only trigger once per interval
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gameState]);
 
   // Keyboard controls
   useEffect(() => {
