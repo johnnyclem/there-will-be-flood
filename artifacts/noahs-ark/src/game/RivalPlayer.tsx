@@ -201,7 +201,7 @@ export function RivalPlayer({ playerId }: RivalPlayerProps) {
       >
         <div
           style={{
-            background: 'rgba(140,0,0,0.85)',
+            background: playerColor + 'D9', // player color at ~85% opacity
             color: '#fff',
             padding: '3px 7px',
             borderRadius: '4px',
@@ -209,7 +209,7 @@ export function RivalPlayer({ playerId }: RivalPlayerProps) {
             whiteSpace: 'nowrap',
             fontFamily: 'monospace',
             fontWeight: 'bold',
-            border: '1px solid rgba(255,80,80,0.6)',
+            border: `1px solid ${playerColor}99`,
           }}
         >
           {playerName}

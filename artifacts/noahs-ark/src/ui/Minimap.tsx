@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { useGameStore, selectLocalPlayer, hasActiveEffect, type DivinePower } from '../store/gameStore';
+import { getTerrainHeight } from '../game/Terrain';
 
 const MINIMAP_SIZE = 160;
 const WORLD_SIZE = 200; // world is -100 to 100
@@ -21,6 +23,57 @@ export function Minimap() {
   const resourceNodes = useGameStore((s) => s.resourceNodes);
   const animalStates = useGameStore((s) => s.animalStates);
   const discoveredArkIds = useGameStore((s) => s.discoveredArkIds);
+
+  // Generate terrain image once — static terrain, no deps needed.
+  // Must be called before any early returns to satisfy Rules of Hooks.
+  const terrainImageUrl = useMemo(() => {
+    const CANVAS_SIZE = 80;
+    const canvas = document.createElement('canvas');
+    canvas.width = CANVAS_SIZE;
+    canvas.height = CANVAS_SIZE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    const imageData = ctx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
+    const data = imageData.data;
+
+    for (let py = 0; py < CANVAS_SIZE; py++) {
+      for (let px = 0; px < CANVAS_SIZE; px++) {
+        // Map pixel to world coordinates (-100 to 100)
+        const worldX = (px / CANVAS_SIZE) * WORLD_SIZE - 100;
+        const worldZ = (py / CANVAS_SIZE) * WORLD_SIZE - 100;
+
+        const height = getTerrainHeight(worldX, worldZ);
+
+        let r: number, g: number, b: number;
+        if (height < -1) {
+          // Water
+          r = 0x1a; g = 0x3a; b = 0x6a;
+        } else if (height < 2) {
+          // Lowland
+          r = 0x2d; g = 0x4a; b = 0x1e;
+        } else if (height < 5) {
+          // Midland
+          r = 0x3a; g = 0x5a; b = 0x28;
+        } else if (height < 10) {
+          // Highland
+          r = 0x5a; g = 0x6a; b = 0x3a;
+        } else {
+          // Mountain
+          r = 0x7a; g = 0x70; b = 0x60;
+        }
+
+        const idx = (py * CANVAS_SIZE + px) * 4;
+        data[idx] = r;
+        data[idx + 1] = g;
+        data[idx + 2] = b;
+        data[idx + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    return canvas.toDataURL();
+  }, []);
 
   const localPlayer = players[localPlayerId];
   if (!localPlayer) return null;
@@ -52,7 +105,8 @@ export function Minimap() {
         width: `${MINIMAP_SIZE}px`,
         height: `${MINIMAP_SIZE}px`,
         borderRadius: '50%',
-        background: 'radial-gradient(ellipse at 40% 35%, #2d4a1e 0%, #1a3a0a 40%, #0d1f05 70%, #080f02 100%)',
+        background: terrainImageUrl ? `url(${terrainImageUrl})` : 'radial-gradient(ellipse at 40% 35%, #2d4a1e 0%, #1a3a0a 40%, #0d1f05 70%, #080f02 100%)',
+        backgroundSize: 'cover',
         border: '2px solid rgba(218,165,32,0.5)',
         boxShadow: '0 0 12px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.4)',
         overflow: 'hidden',
@@ -60,14 +114,6 @@ export function Minimap() {
         backdropFilter: 'blur(2px)',
       }}
     >
-      {/* Subtle terrain texture overlay */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'radial-gradient(circle at 60% 40%, rgba(100,80,40,0.2) 0%, transparent 50%), radial-gradient(circle at 30% 70%, rgba(40,80,20,0.3) 0%, transparent 40%)',
-        borderRadius: '50%',
-      }} />
-
       {/* Fog of war vignette when revelation is inactive */}
       {!hasRevelation && (
         <div style={{

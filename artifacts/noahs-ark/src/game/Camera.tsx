@@ -24,6 +24,7 @@ export function GameCamera() {
 
   const gameState = useGameStore((s) => s.gameState);
   const setCameraRotation = useGameStore((s) => s.setCameraRotation);
+  const cameraShake = useGameStore((s) => s.cameraShake);
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
@@ -93,6 +94,16 @@ export function GameCamera() {
       targetRef.current.y + offsetY,
       targetRef.current.z + offsetZ
     );
+
+    // Apply camera shake
+    const shake = useGameStore.getState().cameraShake;
+    if (shake > 0.01) {
+      _cameraPos.x += (Math.random() - 0.5) * shake * 0.5;
+      _cameraPos.y += (Math.random() - 0.5) * shake * 0.3;
+      _cameraPos.z += (Math.random() - 0.5) * shake * 0.5;
+      // Decay the shake each frame (~halves every 0.5s at 60fps)
+      useGameStore.setState({ cameraShake: shake * 0.92 });
+    }
 
     camera.position.lerp(_cameraPos, 0.08);
     camera.lookAt(targetRef.current);

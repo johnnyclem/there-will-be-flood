@@ -1,6 +1,13 @@
 import { mulberry32 } from '../utils/rng';
 import { getTerrainHeight } from '../game/Terrain';
-import type { ResourceNode, AnimalState, MatchConfig } from './gameStore';
+import type { ResourceNode, AnimalState, MatchConfig, AIDifficulty } from './gameStore';
+
+/** Per-difficulty AI identity: name and body color */
+export const AI_PROFILES: Record<AIDifficulty, { name: string; color: string }> = {
+  apprentice: { name: 'Nimrod the Novice', color: '#27AE60' },
+  prophet:    { name: 'Balaam the Bold',   color: '#E67E22' },
+  patriarch:  { name: 'Goliath the Great', color: '#C0392B' },
+};
 
 const SPECIES = [
   { name: 'Lion', color: '#C4A35A', size: [0.8, 0.5, 1.2] as [number, number, number] },

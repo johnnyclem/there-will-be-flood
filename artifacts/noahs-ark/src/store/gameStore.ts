@@ -5,7 +5,9 @@ import {
   getSpawnPosition,
   PLAYER_COLORS,
   PLAYER_NAMES,
+  AI_PROFILES,
 } from './worldGen';
+import { SFX } from '../utils/sfx';
 
 // --- Types ---
 
@@ -110,6 +112,8 @@ function makePlayer(
   index: number,
   position: [number, number, number],
   isAI: boolean,
+  overrideName?: string,
+  overrideColor?: string,
 ): PlayerState {
   return {
     health: 100,
@@ -121,8 +125,8 @@ function makePlayer(
     position,
     inventory: { wood: 0, pitch: 0, food: 10, gopherWood: 0, holyArtifacts: 0 },
     tool: 'axe',
-    color: PLAYER_COLORS[index] || '#888888',
-    name: isAI ? 'Rival Patriarch' : (PLAYER_NAMES[index] || 'Player'),
+    color: overrideColor ?? (PLAYER_COLORS[index] || '#888888'),
+    name: overrideName ?? (isAI ? 'Rival Patriarch' : (PLAYER_NAMES[index] || 'Player')),
     isAI,
     activeEffects: [],
   };
@@ -173,6 +177,7 @@ interface GameStore {
   resetCounter: number;
   buildMenuOpen: boolean;
   cameraRotation: number;
+  cameraShake: number;
   showDivineIntervention: boolean;
   scoreboardOpen: boolean;
   winnerId: string | null;
@@ -224,6 +229,7 @@ interface GameStore {
 
   // Camera
   setCameraRotation: (r: number) => void;
+  triggerCameraShake: (intensity: number) => void;
 
   // Scoreboard
   toggleScoreboard: () => void;
@@ -279,6 +285,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   resetCounter: 0,
   buildMenuOpen: false,
   cameraRotation: 0,
+  cameraShake: 0,
   showDivineIntervention: false,
   scoreboardOpen: false,
   winnerId: null,
@@ -301,7 +308,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const id = `player-${i}`;
       const isAI = i > 0;
       const pos = isVersus ? getSpawnPosition(i, totalPlayers) : [0, 2, 0] as [number, number, number];
-      players[id] = makePlayer(i, pos, isAI);
+      const aiProfile = isAI ? AI_PROFILES[cfg.aiDifficulty] : undefined;
+      players[id] = makePlayer(i, pos, isAI, aiProfile?.name, aiProfile?.color);
       arks[id] = makeArk(cfg.mode);
       scores[id] = 0;
     }
@@ -443,6 +451,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       arks: updateArk(state, id, () => ({ position: pos })),
       scores: { ...state.scores, [id]: (state.scores[id] || 0) + 50 },
     });
+    if (id === get().localPlayerId) SFX.placeArk();
   },
 
   buildArkSection: (playerId) => {
@@ -463,6 +472,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       })),
       scores: { ...state.scores, [id]: (state.scores[id] || 0) + 100 },
     });
+    if (id === get().localPlayerId) SFX.build();
   },
 
   coatWithPitch: (playerId) => {
@@ -482,6 +492,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       })),
       scores: { ...state.scores, [id]: (state.scores[id] || 0) + 50 },
     });
+    if (id === get().localPlayerId) SFX.coatPitch();
   },
 
   boardAnimal: (animalId, playerId) => {
@@ -514,6 +525,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ),
       scores: { ...state.scores, [id]: (state.scores[id] || 0) + 200 },
     });
+    if (id === get().localPlayerId) SFX.boardAnimal();
   },
 
   // --- Resource nodes ---
@@ -540,6 +552,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Add to player inventory
     get().addResource(node.type, 1, id);
     get().updateFaith(1, id);
+    if (id === get().localPlayerId) SFX.gather();
     return true;
   },
 
@@ -604,6 +617,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
           },
           showDivineIntervention: false,
         });
+        if (id === get().localPlayerId) SFX.divineIntervention();
+        // Shake camera for the caster; shake harder if the local player is the target
+        get().triggerCameraShake(2.0);
+        if (targetId === get().localPlayerId) {
+          get().triggerCameraShake(3.0);
+        }
         return;
       }
     }
@@ -616,6 +635,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       })),
       showDivineIntervention: false,
     });
+    if (id === get().localPlayerId) SFX.divineIntervention();
+    // Shake camera whenever a divine power is activated
+    get().triggerCameraShake(2.0);
   },
 
   clearExpiredEffects: () => {
@@ -648,6 +670,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // --- Camera ---
 
   setCameraRotation: (r) => set({ cameraRotation: r }),
+  triggerCameraShake: (intensity) => set({ cameraShake: intensity }),
 
   // --- Scoreboard ---
 
