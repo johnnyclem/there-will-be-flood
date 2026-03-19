@@ -1,8 +1,13 @@
 import { useEffect } from "react";
-import { useGameStore, selectLocalPlayer, selectLocalArk } from "../store/gameStore";
+import {
+  useGameStore,
+  selectLocalPlayer,
+  selectLocalArk,
+} from "../store/gameStore";
 
 export function InteractionSystem() {
   const gameState = useGameStore((s) => s.gameState);
+  const localPlayerId = useGameStore((s) => s.localPlayerId);
   const pauseGame = useGameStore((s) => s.pauseGame);
   const resumeGame = useGameStore((s) => s.resumeGame);
   const toggleBuildMenu = useGameStore((s) => s.toggleBuildMenu);
@@ -10,7 +15,9 @@ export function InteractionSystem() {
   const updateHealth = useGameStore((s) => s.updateHealth);
   const incrementDay = useGameStore((s) => s.incrementDay);
   const toggleScoreboard = useGameStore((s) => s.toggleScoreboard);
-  const setShowDivineIntervention = useGameStore((s) => s.setShowDivineIntervention);
+  const setShowDivineIntervention = useGameStore(
+    (s) => s.setShowDivineIntervention,
+  );
   const clearExpiredEffects = useGameStore((s) => s.clearExpiredEffects);
   const clearStaleLocks = useGameStore((s) => s.clearStaleLocks);
 
@@ -20,7 +27,8 @@ export function InteractionSystem() {
 
     const interval = setInterval(() => {
       const state = useGameStore.getState();
-      const { world, players, arks, scores, matchConfig, localPlayerId } = state;
+      const { world, players, arks, scores, matchConfig, localPlayerId } =
+        state;
 
       const playerIds = Object.keys(players);
 
@@ -52,7 +60,10 @@ export function InteractionSystem() {
         }
 
         // Too Late: water > 12 AND ark < 50%
-        if (world.waterLevel > 12 && ark.sectionsBuilt < ark.totalSections * 0.5) {
+        if (
+          world.waterLevel > 12 &&
+          ark.sectionsBuilt < ark.totalSections * 0.5
+        ) {
           if (playerId === localPlayerId) {
             gameOver(false);
             return;
@@ -129,9 +140,13 @@ export function InteractionSystem() {
 
     const interval = setInterval(() => {
       const state = useGameStore.getState();
-      if (state.matchConfig.mode !== 'versus') return;
+      if (state.matchConfig.mode !== "versus") return;
       const localPlayer = selectLocalPlayer(state);
-      if (localPlayer && localPlayer.faith >= 100 && !state.showDivineIntervention) {
+      if (
+        localPlayer &&
+        localPlayer.faith >= 100 &&
+        !state.showDivineIntervention
+      ) {
         setShowDivineIntervention(true);
       }
     }, 500);
