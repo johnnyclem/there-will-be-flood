@@ -13,12 +13,25 @@ function cacheKey(text: string): string {
 
 const audioCache = new Map<string, string>();
 
+/**
+ * Sentinel stored in audioCache when a request has permanently failed.
+ * Prevents re-fetching the same text after a 404 or network error.
+ */
+const FETCH_FAILED = '__FETCH_FAILED__';
+
+/** Whether TTS is known to be unavailable (e.g. no backend on Vercel). */
+let ttsUnavailable = false;
+
 let currentAudio: HTMLAudioElement | null = null;
 
 /** Fetch TTS audio and return a blob URL, or null on failure. */
 async function fetchAndCache(text: string): Promise<string | null> {
+  // Short-circuit immediately if TTS has already been confirmed unavailable.
+  if (ttsUnavailable) return null;
+
   const key = cacheKey(text);
   const cached = audioCache.get(key);
+  if (cached === FETCH_FAILED) return null;
   if (cached) return cached;
 
   try {
@@ -29,7 +42,15 @@ async function fetchAndCache(text: string): Promise<string | null> {
     });
 
     if (!response.ok) {
-      console.warn(`[narration] TTS request failed: ${response.status}`);
+      console.warn(`[narration] TTS request failed: ${response.status}. TTS disabled for this session.`);
+      // A 404 means the endpoint doesn't exist (e.g. Vercel with no serverless
+      // function). Mark the entire service unavailable so we never retry.
+      if (response.status === 404 || response.status === 503) {
+        ttsUnavailable = true;
+      } else {
+        // Per-text failure — cache the sentinel so this text isn't retried.
+        audioCache.set(key, FETCH_FAILED);
+      }
       return null;
     }
 
@@ -39,6 +60,8 @@ async function fetchAndCache(text: string): Promise<string | null> {
     return url;
   } catch (err) {
     console.warn('[narration] TTS fetch error (API may be offline):', err);
+    // Network-level failure — assume the backend is entirely unreachable.
+    ttsUnavailable = true;
     return null;
   }
 }
